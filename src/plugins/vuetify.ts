@@ -11,7 +11,21 @@ import 'vuetify/styles'
 
 export default createVuetify({
   theme: {
-    defaultTheme: 'system',
+    themes: {
+      default: {
+        dark: false,
+        colors: {
+          primary: '#9933CC',
+          secondary: '#CC3399',
+          success: '#CCFF66',
+          info: '#FFFF66',
+          warning: '#000001',
+          error: '#E61215',
+          background: '#FFFFFA',
+        },
+      },
+    },
+    defaultTheme: 'default',
     utilities: false,
   },
   display: {

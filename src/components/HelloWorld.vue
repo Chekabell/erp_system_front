@@ -1,5 +1,5 @@
 <template>
-  <v-container class="h-full flex items-center" max-width="900">
+  <v-container class="h-full flex items-center bg-primary" max-width="900">
     <div>
       <v-img
         alt="Placeholder logo"
