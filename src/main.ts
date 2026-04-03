@@ -1,25 +1,16 @@
-/**
- * main.ts
- *
- * Bootstraps Vuetify and other plugins then mounts the App`
- */
-
-// Composables
 import { createApp } from 'vue'
-
-// Plugins
-import { registerPlugins } from '@/plugins'
-
-// Components
+import { createVuetify } from 'vuetify'
+import * as components from 'vuetify/components'
+import * as directives from 'vuetify/directives'
 import App from './App.vue'
+import router from './router'
+import 'vuetify/styles'
+import '@mdi/font/css/materialdesignicons.css'
 
-// Styles
-import 'unfonts.css'
-import './styles/tailwind.css'
-import './styles/main.scss'
+const vuetify = createVuetify({
+  components,
+  directives,
+  theme: { defaultTheme: 'light' },
+})
 
-const app = createApp(App)
-
-registerPlugins(app)
-
-app.mount('#app')
+createApp(App).use(vuetify).use(router).mount('#app')
