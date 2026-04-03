@@ -2,8 +2,8 @@
   <v-app>
     <AppSidebar />
     <v-main class="bg-grey-lighten-4">
-      <v-container fluid class="pa-4 pa-md-8">
-        <transition name="fade" mode="out-in">
+      <v-container class="pa-4 pa-md-8" fluid>
+        <transition mode="out-in" name="fade">
           <router-view v-slot="{ Component }">
             <component :is="Component" />
           </router-view>
@@ -15,7 +15,7 @@
 
 <script setup lang="ts">
 
-  import AppSidebar from '@/components/layout/AppSidebar.vue'
+  import AppSidebar from '@/components/AppSidebar.vue'
 
 </script>
 

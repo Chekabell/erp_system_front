@@ -3,12 +3,19 @@
     <v-card-title class="d-flex justify-space-between align-center flex-wrap">
       <span class="text-h6">📊 План обучения групп</span>
       <div class="d-flex gap-2 align-center">
-        <v-btn v-tooltip="'Отдалить (Ctrl+колёсико мыши)'" icon="mdi-minus" variant="text" @click="zoomOut" />
-        <v-btn v-tooltip="'Приблизить (Ctrl+колёсико мыши)'" icon="mdi-plus" variant="text" @click="zoomIn" />
+        <v-btn-toggle v-model="scalePreset" density="compact" variant="outlined">
+          <v-btn :value="30">Неделя</v-btn>
+          <v-btn :value="12">Месяц</v-btn>
+          <v-btn :value="5">Квартал</v-btn>
+        </v-btn-toggle>
         <v-divider class="mx-1" inset vertical />
-        <v-btn v-tooltip="'Прокрутить влево'" icon="mdi-arrow-left" variant="text" @click="pan(-0.3)" />
-        <v-btn v-tooltip="'Прокрутить вправо'" icon="mdi-arrow-right" variant="text" @click="pan(0.3)" />
-        <v-btn v-tooltip="'Сбросить вид'" icon="mdi-fit-to-page" variant="text" @click="resetView" />
+        <div class="d-flex gap-1">
+          <v-btn v-tooltip="'Вверх'" icon="mdi-arrow-up" variant="text" @click="panVertical(-1)" />
+          <v-btn v-tooltip="'Вниз'" icon="mdi-arrow-down" variant="text" @click="panVertical(1)" />
+          <v-btn v-tooltip="'Влево (Shift+колёсико)'" icon="mdi-arrow-left" variant="text" @click="panHorizontal(-1)" />
+          <v-btn v-tooltip="'Вправо (Shift+колёсико)'" icon="mdi-arrow-right" variant="text" @click="panHorizontal(1)" />
+          <v-btn v-tooltip="'Сбросить вид'" icon="mdi-fit-to-page" variant="text" @click="resetView" />
+        </div>
       </div>
     </v-card-title>
 
@@ -27,7 +34,7 @@
       </div>
     </v-card-text>
 
-    <!-- Диалог детализации -->
+    <!-- Диалог детализации группы -->
     <v-dialog v-model="detailsDialog" max-width="600">
       <v-card v-if="selectedGroup">
         <v-card-title>{{ selectedGroup.name }}</v-card-title>
@@ -69,6 +76,7 @@
 <script setup lang="ts">
   import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
+  // ---------- Типы ----------
   interface Employee {
     id: number
     name: string
@@ -83,54 +91,46 @@
     members: Employee[]
   }
 
+  // ---------- Пропсы ----------
   const props = defineProps<{
     groups: Group[]
   }>()
 
+  // ---------- Состояние ----------
   const canvasRef = ref<HTMLCanvasElement | null>(null)
   const wrapperRef = ref<HTMLDivElement | null>(null)
 
-  // Текущий масштаб (пикселей на день)
-  const pixelsPerDay = ref(30) // стартовый zoom
-  const offset = ref(0) // смещение в днях
+  // Масштаб (пикселей на день)
+  const pixelsPerDay = ref(30)
+  // Смещения: offsetX в днях, offsetY в пикселях
+  const offsetX = ref(0)
+  const offsetY = ref(0)
+
+  // Пресет для кнопок
+  const scalePreset = computed({
+    get: () => {
+      if (Math.abs(pixelsPerDay.value - 30) < 0.1) return 30
+      if (Math.abs(pixelsPerDay.value - 12) < 0.1) return 12
+      if (Math.abs(pixelsPerDay.value - 5) < 0.1) return 5
+      return null
+    },
+    set: (val: number | null) => {
+      if (val !== null) pixelsPerDay.value = val
+    },
+  })
 
   // Drag state
-  const dragStart = ref({ x: 0, offset: 0, isDragging: false })
+  const dragStart = ref({ x: 0, y: 0, offsetX: 0, offsetY: 0, isDragging: false })
 
   const detailsDialog = ref(false)
   const selectedGroup = ref<Group | null>(null)
   const showConflictSnackbar = ref(false)
 
-  // ---------- Вспомогательные функции ограничения прокрутки ----------
-  function clampOffset () {
-    if (!wrapperRef.value) return
-    const wrapper = wrapperRef.value
-    const viewportWidth = wrapper.clientWidth
-    const fullWidth = canvasWidth.value
-    if (fullWidth <= viewportWidth) {
-      offset.value = 0
-      return
-    }
-    const maxOffsetDays = (fullWidth - viewportWidth) / pixelsPerDay.value
-    if (offset.value < 0) offset.value = 0
-    if (offset.value > maxOffsetDays) offset.value = maxOffsetDays
-  }
+  // ---------- Геометрия ----------
+  const rowHeight = 50
+  const leftPanelWidth = 150
 
-  // ---------- Динамическая шкала времени ----------
-  const timeScaleConfig = computed(() => {
-    const ppd = pixelsPerDay.value
-    if (ppd >= 25) {
-      return { stepDays: 1, format: (d: Date) => d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }) }
-    } else if (ppd >= 10) {
-      return { stepDays: 3, format: (d: Date) => d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }) }
-    } else if (ppd >= 4) {
-      return { stepDays: 7, format: (d: Date) => `Нед ${Math.ceil(d.getDate() / 7)}` }
-    } else {
-      return { stepDays: 30, format: (d: Date) => d.toLocaleDateString('ru-RU', { month: 'short', year: '2-digit' }) }
-    }
-  })
-
-  // Глобальный диапазон дат
+  // Глобальный диапазон дат (с отступами)
   const globalDateRange = computed(() => {
     if (props.groups.length === 0) return { min: new Date(), max: new Date() }
     let minDate = new Date(props.groups[0].startDate)
@@ -151,14 +151,38 @@
     return Math.ceil((range.max.getTime() - range.min.getTime()) / 86_400_000)
   })
 
-  const rowHeight = 50
-  const canvasWidth = computed(() => totalDays.value * pixelsPerDay.value + 200)
+  const canvasWidth = computed(() => totalDays.value * pixelsPerDay.value + leftPanelWidth)
   const canvasHeight = computed(() => props.groups.length * rowHeight + 60)
 
+  // Размеры видимой области
+  const viewportWidth = ref(0)
+  const viewportHeight = ref(0)
+
+  // Максимальные смещения
+  const maxOffsetX = computed(() => {
+    const fullWidth = canvasWidth.value
+    if (fullWidth <= viewportWidth.value) return 0
+    return (fullWidth - viewportWidth.value) / pixelsPerDay.value
+  })
+
+  const maxOffsetY = computed(() => {
+    const fullHeight = canvasHeight.value
+    if (fullHeight <= viewportHeight.value) return 0
+    return fullHeight - viewportHeight.value
+  })
+
+  function clampOffsets () {
+    if (offsetX.value < 0) offsetX.value = 0
+    if (offsetX.value > maxOffsetX.value) offsetX.value = maxOffsetX.value
+    if (offsetY.value < 0) offsetY.value = 0
+    if (offsetY.value > maxOffsetY.value) offsetY.value = maxOffsetY.value
+  }
+
+  // ---------- Преобразования координат ----------
   function dateToX (date: Date): number {
     const range = globalDateRange.value
     const daysSinceMin = (date.getTime() - range.min.getTime()) / 86_400_000
-    return daysSinceMin * pixelsPerDay.value - offset.value * pixelsPerDay.value + 150
+    return daysSinceMin * pixelsPerDay.value - offsetX.value * pixelsPerDay.value + leftPanelWidth
   }
 
   function groupStartX (group: Group) {
@@ -177,6 +201,10 @@
     return elapsedDays * pixelsPerDay.value
   }
 
+  function groupY (index: number): number {
+    return index * rowHeight + 40 - offsetY.value
+  }
+
   // ---------- Отрисовка ----------
   function draw () {
     const canvas = canvasRef.value
@@ -184,8 +212,7 @@
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    // Применяем ограничение перед отрисовкой
-    clampOffset()
+    clampOffsets()
 
     canvas.width = canvasWidth.value
     canvas.height = canvasHeight.value
@@ -197,11 +224,13 @@
     drawTimeScale(ctx)
     drawGrid(ctx)
 
+    // Полосы групп
     for (const [idx, group] of props.groups.entries()) {
-      const y = idx * rowHeight + 40
+      const y = groupY(idx)
       const startX = groupStartX(group)
       const width = groupWidth(group)
-      if (startX + width < 0 || startX > canvas.width) continue
+      if (y + rowHeight < 0 || y > canvasHeight.value) continue
+      if (startX + width < 0 || startX > canvasWidth.value) continue
 
       ctx.fillStyle = '#e3f2fd'
       ctx.fillRect(startX, y + 5, width, rowHeight - 10)
@@ -237,12 +266,14 @@
       }
     }
 
+    // Левая панель с названиями
     ctx.fillStyle = '#f5f5f5'
-    ctx.fillRect(0, 0, 150, canvas.height)
+    ctx.fillRect(0, 0, leftPanelWidth, canvas.height)
     ctx.strokeStyle = '#ddd'
-    ctx.strokeRect(0, 0, 150, canvas.height)
+    ctx.strokeRect(0, 0, leftPanelWidth, canvas.height)
     for (const [idx, group] of props.groups.entries()) {
-      const y = idx * rowHeight + 40
+      const y = groupY(idx)
+      if (y + rowHeight < 0 || y > canvasHeight.value) continue
       ctx.fillStyle = '#333'
       ctx.font = '13px "Segoe UI"'
       ctx.fillText(group.name, 10, y + rowHeight / 2 + 3)
@@ -251,10 +282,25 @@
 
   function drawTimeScale (ctx: CanvasRenderingContext2D) {
     const range = globalDateRange.value
-    const { stepDays, format } = timeScaleConfig.value
+    let stepDays: number
+    let format: (d: Date) => string
+    const ppd = pixelsPerDay.value
+    if (ppd >= 25) {
+      stepDays = 1
+      format = (d: Date) => d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })
+    } else if (ppd >= 10) {
+      stepDays = 3
+      format = (d: Date) => d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })
+    } else if (ppd >= 4) {
+      stepDays = 7
+      format = (d: Date) => `Нед ${Math.ceil(d.getDate() / 7)}`
+    } else {
+      stepDays = 30
+      format = (d: Date) => d.toLocaleDateString('ru-RU', { month: 'short', year: '2-digit' })
+    }
+
     let current = new Date(range.min)
     const end = range.max
-
     ctx.fillStyle = '#333'
     ctx.font = '11px "Segoe UI"'
     ctx.strokeStyle = '#ccc'
@@ -262,7 +308,7 @@
 
     while (current <= end) {
       const x = dateToX(current)
-      if (x > 0 && x < canvasWidth.value) {
+      if (x > leftPanelWidth && x < canvasWidth.value) {
         ctx.beginPath()
         ctx.moveTo(x, 30)
         ctx.lineTo(x, 40)
@@ -275,14 +321,20 @@
 
   function drawGrid (ctx: CanvasRenderingContext2D) {
     const range = globalDateRange.value
-    const { stepDays } = timeScaleConfig.value
+    let stepDays: number
+    const ppd = pixelsPerDay.value
+    if (ppd >= 25) stepDays = 1
+    else if (ppd >= 10) stepDays = 3
+    else if (ppd >= 4) stepDays = 7
+    else stepDays = 30
+
     let current = new Date(range.min)
     const end = range.max
     ctx.strokeStyle = '#e0e0e0'
     ctx.lineWidth = 0.5
     while (current <= end) {
       const x = dateToX(current)
-      if (x > 0 && x < canvasWidth.value) {
+      if (x > leftPanelWidth && x < canvasWidth.value) {
         ctx.beginPath()
         ctx.moveTo(x, 40)
         ctx.lineTo(x, canvasHeight.value)
@@ -292,63 +344,70 @@
     }
   }
 
-  // ---------- Масштабирование кнопками и колесом ----------
-  function zoomIn () {
-    let newPixels = pixelsPerDay.value * 1.2
-    if (newPixels > 80) newPixels = 80
-    pixelsPerDay.value = newPixels
-    clampOffset()
-    draw()
-  }
-
-  function zoomOut () {
-    let newPixels = pixelsPerDay.value / 1.2
-    if (newPixels < 3) newPixels = 3
-    pixelsPerDay.value = newPixels
-    clampOffset()
-    draw()
-  }
-
+  // ---------- Обработка колесика (вертикаль, горизонталь, масштаб) ----------
   function handleWheel (event: WheelEvent) {
     event.preventDefault()
     if (event.ctrlKey) {
+      // Масштабирование
       const delta = event.deltaY > 0 ? 0.9 : 1.1
       let newPixels = pixelsPerDay.value * delta
       newPixels = Math.min(80, Math.max(3, newPixels))
       pixelsPerDay.value = newPixels
+      clampOffsets()
+    } else if (event.shiftKey) {
+      // Горизонтальная прокрутка
+      const deltaX = event.deltaY > 0 ? 20 : -20
+      offsetX.value += deltaX / pixelsPerDay.value
+      clampOffsets()
     } else {
-      const panDelta = event.deltaY > 0 ? 20 : -20
-      offset.value += panDelta / pixelsPerDay.value
+      // Вертикальная прокрутка
+      const deltaY = event.deltaY > 0 ? 20 : -20
+      offsetY.value += deltaY
+      clampOffsets()
     }
-    clampOffset()
     draw()
   }
 
-  function pan (direction: number) {
-    offset.value += direction * 200 / pixelsPerDay.value
-    clampOffset()
+  // ---------- Панорамирование кнопками ----------
+  function panHorizontal (direction: number) {
+    offsetX.value += direction * 150 / pixelsPerDay.value
+    clampOffsets()
+    draw()
+  }
+
+  function panVertical (direction: number) {
+    offsetY.value += direction * 150
+    clampOffsets()
     draw()
   }
 
   function resetView () {
-    offset.value = 0
+    offsetX.value = 0
+    offsetY.value = 0
     pixelsPerDay.value = 30
-    clampOffset()
+    clampOffsets()
     draw()
   }
 
-  // ---------- Drag ----------
+  // ---------- Drag ЛКМ (панорамирование во все стороны) ----------
   function startDrag (event: MouseEvent) {
-    dragStart.value = { x: event.clientX, offset: offset.value, isDragging: true }
+    dragStart.value = {
+      x: event.clientX,
+      y: event.clientY,
+      offsetX: offsetX.value,
+      offsetY: offsetY.value,
+      isDragging: true,
+    }
     document.body.style.userSelect = 'none'
   }
 
   function onDrag (event: MouseEvent) {
     if (!dragStart.value.isDragging) return
     const dx = event.clientX - dragStart.value.x
-    const deltaOffset = -dx / pixelsPerDay.value
-    offset.value = dragStart.value.offset + deltaOffset
-    clampOffset()
+    const dy = event.clientY - dragStart.value.y
+    offsetX.value = dragStart.value.offsetX - dx / pixelsPerDay.value
+    offsetY.value = dragStart.value.offsetY - dy
+    clampOffsets()
     draw()
   }
 
@@ -357,7 +416,7 @@
     document.body.style.userSelect = ''
   }
 
-  // ---------- Конфликты ----------
+  // ---------- Конфликты в расписании ----------
   const groupConflicts = computed(() => {
     const conflictsMap: Record<number, boolean> = {}
     if (props.groups.length === 0) return conflictsMap
@@ -385,15 +444,16 @@
     return conflictsMap
   })
 
-  // ---------- Клик по полосе ----------
+  // ---------- Клик по полосе для детализации ----------
   function handleCanvasClick (event: MouseEvent) {
     const canvas = canvasRef.value
     if (!canvas) return
     const rect = canvas.getBoundingClientRect()
     const scaleX = canvas.width / rect.width
+    const scaleY = canvas.height / rect.height
     const clickX = (event.clientX - rect.left) * scaleX
-    const clickY = (event.clientY - rect.top) * scaleX
-    const rowIndex = Math.floor((clickY - 40) / rowHeight)
+    const clickY = (event.clientY - rect.top) * scaleY
+    const rowIndex = Math.floor((clickY - 40 + offsetY.value) / rowHeight)
     if (rowIndex >= 0 && rowIndex < props.groups.length) {
       const group = props.groups[rowIndex]
       const startX = groupStartX(group)
@@ -405,24 +465,31 @@
     }
   }
 
-  // ---------- Resize observer для пересчёта ограничений ----------
+  // ---------- Отслеживание размеров контейнера ----------
+  function updateViewportSize () {
+    if (wrapperRef.value) {
+      viewportWidth.value = wrapperRef.value.clientWidth
+      viewportHeight.value = wrapperRef.value.clientHeight
+      clampOffsets()
+      draw()
+    }
+  }
+
   let resizeObserver: ResizeObserver | null = null
   onMounted(() => {
     canvasRef.value?.addEventListener('click', handleCanvasClick)
-    draw()
+    updateViewportSize()
     if (wrapperRef.value) {
-      resizeObserver = new ResizeObserver(() => {
-        clampOffset()
-        draw()
-      })
+      resizeObserver = new ResizeObserver(() => updateViewportSize())
       resizeObserver.observe(wrapperRef.value)
     }
+    draw()
   })
   onUnmounted(() => {
     if (resizeObserver) resizeObserver.disconnect()
   })
 
-  watch([() => props.groups, pixelsPerDay, offset], () => {
+  watch([() => props.groups, pixelsPerDay, offsetX, offsetY], () => {
     nextTick(() => draw())
   })
 
