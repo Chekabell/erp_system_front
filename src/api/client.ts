@@ -9,16 +9,14 @@ const api = axios.create({
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
-  // Важно для cookieAuth: отправлять куки с запросами
-  withCredentials: true,
+  withCredentials: false,
 })
 
-// Интерсептор для обработки ошибок (опционально, но полезно)
 api.interceptors.response.use(
   response => response,
   error => {
     console.error('API Error:', error)
-    // Здесь можно добавить редирект на логин, если 401
+
     return Promise.reject(error)
   },
 )

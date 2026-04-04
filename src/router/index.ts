@@ -22,7 +22,6 @@ const routes: RouteRecordRaw[] = [
       { path: 'groups/:id', name: 'group-detail', component: () => import('@/views/GroupDetailView.vue'), meta: { title: 'Карточка группы' } },
       { path: 'specifications', name: 'specifications', component: () => import('@/views/SpecificationsView.vue'), meta: { title: 'Спецификации' } },
       { path: 'companies', name: 'companies', component: () => import('@/views/CompaniesView.vue'), meta: { title: 'Компании' } },
-      { path: 'gantt', name: 'gantt', component: () => import('@/views/GanttChartView.vue'), meta: { title: 'Диаграмма Ганта' } },
     ],
   },
 ]

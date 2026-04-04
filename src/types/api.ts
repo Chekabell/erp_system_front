@@ -86,8 +86,8 @@ export interface GroupResponse {
 export interface SimpleGroupResponse {
   id: number
   course_title: string
-  start_date: string // YYYY-MM-DD
-  end_date: string // YYYY-MM-DD
+  start_date: Date // YYYY-MM-DD
+  end_date: Date // YYYY-MM-DD
   status?: GroupStatus
   average_progress: number
 }
