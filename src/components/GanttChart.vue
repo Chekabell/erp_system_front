@@ -37,12 +37,12 @@
     <!-- Диалог детализации группы -->
     <v-dialog v-model="detailsDialog" max-width="600">
       <v-card v-if="selectedGroup">
-        <v-card-title>{{ selectedGroup.name }}</v-card-title>
+        <v-card-title>{{ selectedGroup.course_title }}</v-card-title>
         <v-card-text>
-          <p><strong>📅 Даты:</strong> {{ formatDate(selectedGroup.startDate) }} – {{ formatDate(selectedGroup.endDate) }}</p>
+          <p><strong>📅 Даты:</strong> {{ selectedGroup.start_date }} – {{ selectedGroup.end_date }}</p>
           <p><strong>📈 Прогресс курса:</strong> {{ selectedGroup.progress }}%</p>
           <v-divider class="my-2" />
-          <p><strong>👥 Состав группы ({{ selectedGroup.members?.length || 0 }} чел.):</strong></p>
+          <p><strong>👥 Состав группы ({{ selectedGroup.?.length || 0 }} чел.):</strong></p>
           <v-chip v-for="member in selectedGroup.members" :key="member.id" class="ma-1" size="small">
             {{ member.name }}
           </v-chip>
@@ -74,26 +74,12 @@
 </template>
 
 <script setup lang="ts">
+  import type { GanttItem } from '@/types/api'
   import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
-
-  // ---------- Типы ----------
-  interface Employee {
-    id: number
-    name: string
-  }
-
-  interface Group {
-    id: number
-    name: string
-    startDate: Date
-    endDate: Date
-    progress: number
-    members: Employee[]
-  }
 
   // ---------- Пропсы ----------
   const props = defineProps<{
-    groups: Group[]
+    groups: GanttItem[]
   }>()
 
   // ---------- Состояние ----------
@@ -123,7 +109,7 @@
   const dragStart = ref({ x: 0, y: 0, offsetX: 0, offsetY: 0, isDragging: false })
 
   const detailsDialog = ref(false)
-  const selectedGroup = ref<Group | null>(null)
+  const selectedGroup = ref<GanttItem | null>(null)
   const showConflictSnackbar = ref(false)
 
   // ---------- Геометрия ----------
@@ -133,11 +119,11 @@
   // Глобальный диапазон дат (с отступами)
   const globalDateRange = computed(() => {
     if (props.groups.length === 0) return { min: new Date(), max: new Date() }
-    let minDate = new Date(props.groups[0].startDate)
-    let maxDate = new Date(props.groups[0].endDate)
+    let minDate = new Date(props.groups[0].start_date)
+    let maxDate = new Date(props.groups[0].end_date)
     for (const g of props.groups) {
-      if (g.startDate < minDate) minDate = g.startDate
-      if (g.endDate > maxDate) maxDate = g.endDate
+      if (g.start_date < minDate) minDate = g.start_date
+      if (g.endDate > maxDate) maxDate = g.end_date
     }
     const paddingDays = 5
     return {
@@ -185,16 +171,16 @@
     return daysSinceMin * pixelsPerDay.value - offsetX.value * pixelsPerDay.value + leftPanelWidth
   }
 
-  function groupStartX (group: Group) {
+  function groupStartX (group: GanttItem) {
     return dateToX(group.startDate)
   }
-  function groupEndX (group: Group) {
+  function groupEndX (group: GanttItem) {
     return dateToX(group.endDate)
   }
-  function groupWidth (group: Group) {
+  function groupWidth (group: GanttItem) {
     return groupEndX(group) - groupStartX(group)
   }
-  function progressWidth (group: Group) {
+  function progressWidth (group: GanttItem) {
     const totalDuration = group.endDate.getTime() - group.startDate.getTime()
     const elapsed = (group.progress / 100) * totalDuration
     const elapsedDays = elapsed / 86_400_000
