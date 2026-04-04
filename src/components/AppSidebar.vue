@@ -46,7 +46,5 @@
     { title: 'Учебные группы', route: '/groups', icon: 'mdi-account-multiple-check' },
     { title: 'Спецификации', route: '/specifications', icon: 'mdi-file-document-edit' },
     { title: 'Компании', route: '/companies', icon: 'mdi-office-building-marker' },
-    { title: 'Диаграмма Ганта', route: '/gantt', icon: 'mdi-calendar-month' },
-    { title: 'XML Интеграция', route: '/integration', icon: 'mdi-cloud-sync-outline' },
   ]
 </script>

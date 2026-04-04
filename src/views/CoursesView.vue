@@ -61,20 +61,6 @@
 
     <!-- Footer: Page Size & Pagination -->
     <div class="d-flex justify-space-between align-center mt-6 pa-3 bg-surface-variant rounded-lg" v-if="totalPages > 0">
-      <div class="d-flex align-center ga-2">
-        <span class="text-caption text-medium-emphasis">Показывать по:</span>
-        <v-select
-          v-model="coursesStore.state.pagination.pageSize"
-          :items="[10, 20, 50, 100]"
-          density="compact"
-          variant="outlined"
-          hide-details
-          style="width: 80px;"
-          @update:model-value="coursesStore.changePageSize"
-        ></v-select>
-        <span class="text-caption text-medium-emphasis">из {{ coursesStore.state.pagination.count }}</span>
-      </div>
-
       <v-pagination
         v-if="totalPages > 1"
         :model-value="coursesStore.state.pagination.page"
