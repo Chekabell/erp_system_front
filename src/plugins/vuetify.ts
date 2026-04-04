@@ -11,8 +11,6 @@ import '../styles/layers.css'
 import 'vuetify/styles'
 
 export default createVuetify({
-  components,
-  directives,
   theme: {
     themes: {
       light: {
@@ -29,7 +27,7 @@ export default createVuetify({
       },
     },
     defaultTheme: 'light',
-    utilities: false,
+    utilities: true,
   },
   display: {
     mobileBreakpoint: 'md',
@@ -42,4 +40,6 @@ export default createVuetify({
       xxl: 2138,
     },
   },
+  components,
+  directives,
 })

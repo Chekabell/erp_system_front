@@ -4,6 +4,5 @@ import vuetify from './plugins/vuetify'
 import router from './router'
 import 'vuetify/styles'
 import '@mdi/font/css/materialdesignicons.css'
-import './styles/tailwind.css'
 
 createApp(App).use(vuetify).use(router).mount('#app')
