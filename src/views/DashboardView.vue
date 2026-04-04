@@ -1,26 +1,20 @@
 <template>
-  <v-container class="pa-6" fluid>
+  <v-container fluid>
     <!-- Заголовок -->
-    <v-row align="center" class="mb-6">
+    <v-row align="center">
       <v-col>
-        <h1 class="text-h3 font-weight-bold mb-1">Панель управления</h1>
-        <p class="text-body-1 text-medium-emphasis">Корпоративное обучение: ключевые показатели и планирование</p>
-      </v-col>
-      <v-col cols="auto">
-        <v-chip color="primary" prepend-icon="mdi-calendar" size="large" variant="tonal">
-          {{ currentDate }}
-        </v-chip>
+        <h1 class="text-h3 font-weight-semibold" style="font-size: 40px;">Статистика</h1>
       </v-col>
     </v-row>
 
+    <v-divider class="my-6" />
+
     <!-- 📊 KPI Карточки -->
-    <v-row class="mb-6" dense>
+    <v-row class="mb-6">
       <v-col cols="12" md="3" sm="6">
-        <v-card class="pa-4" color="primary" height="100%" variant="tonal">
+        <v-card class="pa-4 rounded-xl" height="100%" style="background-image: linear-gradient(to bottom, rgba(2, 136, 255, 0.6) 0%, rgba(1, 136, 255, 0.75) 38%, #1976D2 100%);" variant="tonal">
           <div class="d-flex align-center ga-3 mb-3">
-            <v-avatar class="text-white" color="primary" size="40" variant="elevated">
-              <v-icon>mdi-office-building-marker</v-icon>
-            </v-avatar>
+            <v-icon><PeopleIcon /></v-icon>
             <span class="text-h6 font-weight-medium">Компании</span>
           </div>
           <div class="text-h3 font-weight-bold mb-1">{{ stats.companies }}</div>
@@ -199,6 +193,7 @@
 <script setup lang="ts">
   import { computed, onMounted } from 'vue'
   import { useRouter } from 'vue-router'
+  import PeopleIcon from '@/icons/PeopleIcon.vue'
   import { companiesStore } from '@/stores/companiesStore'
   import { coursesStore } from '@/stores/coursesStore'
   import { groupsStore } from '@/stores/groupsStore'
