@@ -74,26 +74,12 @@
 </template>
 
 <script setup lang="ts">
+  import type { GanttItem } from '@/types/api'
   import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
-
-  // ---------- Типы ----------
-  interface Employee {
-    id: number
-    name: string
-  }
-
-  interface Group {
-    id: number
-    name: string
-    startDate: Date
-    endDate: Date
-    progress: number
-    members: Employee[]
-  }
 
   // ---------- Пропсы ----------
   const props = defineProps<{
-    groups: Group[]
+    groups: GanttItem[]
   }>()
 
   // ---------- Состояние ----------
@@ -123,7 +109,7 @@
   const dragStart = ref({ x: 0, y: 0, offsetX: 0, offsetY: 0, isDragging: false })
 
   const detailsDialog = ref(false)
-  const selectedGroup = ref<Group | null>(null)
+  const selectedGroup = ref<GanttItem | null>(null)
   const showConflictSnackbar = ref(false)
 
   // ---------- Геометрия ----------
@@ -133,11 +119,11 @@
   // Глобальный диапазон дат (с отступами)
   const globalDateRange = computed(() => {
     if (props.groups.length === 0) return { min: new Date(), max: new Date() }
-    let minDate = new Date(props.groups[0].startDate)
-    let maxDate = new Date(props.groups[0].endDate)
+    let minDate = new Date(props.groups[0].start_date)
+    let maxDate = new Date(props.groups[0].end_date)
     for (const g of props.groups) {
-      if (g.startDate < minDate) minDate = g.startDate
-      if (g.endDate > maxDate) maxDate = g.endDate
+      if (g.start_date < minDate) minDate = g.start_date
+      if (g.endDate > maxDate) maxDate = g.end_date
     }
     const paddingDays = 5
     return {
@@ -185,16 +171,16 @@
     return daysSinceMin * pixelsPerDay.value - offsetX.value * pixelsPerDay.value + leftPanelWidth
   }
 
-  function groupStartX (group: Group) {
+  function groupStartX (group: GanttItem) {
     return dateToX(group.startDate)
   }
-  function groupEndX (group: Group) {
+  function groupEndX (group: GanttItem) {
     return dateToX(group.endDate)
   }
-  function groupWidth (group: Group) {
+  function groupWidth (group: GanttItem) {
     return groupEndX(group) - groupStartX(group)
   }
-  function progressWidth (group: Group) {
+  function progressWidth (group: GanttItem) {
     const totalDuration = group.endDate.getTime() - group.startDate.getTime()
     const elapsed = (group.progress / 100) * totalDuration
     const elapsedDays = elapsed / 86_400_000

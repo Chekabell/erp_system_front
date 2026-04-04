@@ -41,7 +41,7 @@ export function createEntityStore<T>(endpoint: string) {
     try {
       const requestParams = {
         page: state.pagination.page,
-        page_size: state.pagination.pageSize, // Важно: отправляем размер страницы
+        page_size: state.pagination.pageSize,
         ...params
       }
       Object.keys(requestParams).forEach(k => requestParams[k] == null && delete requestParams[k])
@@ -61,12 +61,11 @@ export function createEntityStore<T>(endpoint: string) {
     }
   }
 
-  // ✅ Метод для изменения количества записей на странице
   const changePageSize = (size: number) => {
     state.pagination.pageSize = size
-    state.pagination.page = 1 // Сброс на первую страницу
-    state.isFetched = false   // Инвалидация кэша
-    fetch()                   // Принудительная загрузка
+    state.pagination.page = 1
+    state.isFetched = false
+    fetch()
   }
 
   const goToPage = (page: number) => {
