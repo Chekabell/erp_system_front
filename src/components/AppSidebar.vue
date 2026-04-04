@@ -1,7 +1,7 @@
 <template>
   <v-navigation-drawer
     v-model="drawer"
-    class="bg-surface-light"
+    class="bg-primary"
     expand-on-hover
     permanent
     :rail="rail"
@@ -26,7 +26,7 @@
 
     <template #append>
       <v-divider />
-      <v-list-item class="ma-2" prepend-icon="mdi-chevron-left" :title="rail ? '' : 'Свернуть'" @click="rail = !rail" />
+      <v-list-item class="ma-2" prepend-icon="mdi-chevron-left" :title="rail ? 'Развернуть' : 'Свернуть'" @click="rail = !rail" />
     </template>
   </v-navigation-drawer>
 </template>
@@ -40,10 +40,10 @@
 
   interface MenuItem { title: string, route: string, icon: string }
   const menuItems: MenuItem[] = [
-    { title: 'Главная', route: '/', icon: 'mdi-view-dashboard' },
-    { title: 'Курсы обучения', route: '/courses', icon: 'mdi-book-open-page-variant' },
-    { title: 'Участники', route: '/participants', icon: 'mdi-account-group' },
+    { title: 'Диаграмма Ганта', route: '/', icon: 'mdi-view-dashboard' },
     { title: 'Учебные группы', route: '/groups', icon: 'mdi-account-multiple-check' },
+    { title: 'Сотрудники', route: '/participants', icon: 'mdi-account-group' },
+    { title: 'Прайс-лист курсов', route: '/courses', icon: 'mdi-book-open-page-variant' },
     { title: 'Спецификации', route: '/specifications', icon: 'mdi-file-document-edit' },
     { title: 'Компании', route: '/companies', icon: 'mdi-office-building-marker' },
   ]
