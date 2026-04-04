@@ -37,18 +37,18 @@
     <!-- Диалог детализации группы -->
     <v-dialog v-model="detailsDialog" max-width="600">
       <v-card v-if="selectedGroup">
-        <v-card-title>{{ selectedGroup.name }}</v-card-title>
+        <v-card-title>{{ selectedGroup.course_title }}</v-card-title>
         <v-card-text>
-          <p><strong>📅 Даты:</strong> {{ formatDate(selectedGroup.startDate) }} – {{ formatDate(selectedGroup.endDate) }}</p>
-          <p><strong>📈 Прогресс курса:</strong> {{ selectedGroup.progress }}%</p>
+          <p><strong>📅 Даты:</strong> {{ formatDate(selectedGroup.start_date) }} – {{ formatDate(selectedGroup.end_date) }}</p>
+          <p><strong>📈 Прогресс курса:</strong> {{ selectedGroup.average_progress }}%</p>
           <v-divider class="my-2" />
-          <p><strong>👥 Состав группы ({{ selectedGroup.members?.length || 0 }} чел.):</strong></p>
+          <!-- <p><strong>👥 Состав группы ({{ selectedGroup.members?.length || 0 }} чел.):</strong></p>
           <v-chip v-for="member in selectedGroup.members" :key="member.id" class="ma-1" size="small">
             {{ member.name }}
-          </v-chip>
-          <v-alert v-if="groupConflicts[selectedGroup.id]" class="mt-3" density="compact" type="warning">
+          </v-chip> -->
+          <!-- <v-alert v-if="groupConflicts[selectedGroup.id]" class="mt-3" density="compact" type="warning">
             ⚠️ Конфликт: у сотрудников пересекаются занятия с другими группами
-          </v-alert>
+          </v-alert> -->
         </v-card-text>
         <v-card-actions>
           <v-spacer />
@@ -75,22 +75,7 @@
 
 <script setup lang="ts">
   import type { SimpleGroupResponse } from '@/types/api'
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
-
-  // ---------- Типы ----------
-  interface Employee {
-    id: number
-    name: string
-  }
-
-  interface Group {
-    id: number
-    name: string
-    startDate: Date
-    endDate: Date
-    progress: number
-    members: Employee[]
-  }
+  import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
   // ---------- Пропсы ----------
   const props = defineProps<{
@@ -124,21 +109,29 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
   const dragStart = ref({ x: 0, y: 0, offsetX: 0, offsetY: 0, isDragging: false })
 
   const detailsDialog = ref(false)
-  const selectedGroup = ref<Group | null>(null)
+  const selectedGroup = ref<SimpleGroupResponse | null>(null)
   const showConflictSnackbar = ref(false)
 
   // ---------- Геометрия ----------
   const rowHeight = 50
   const leftPanelWidth = 150
 
-  // Глобальный диапазон дат (с отступами)
+  const normalizedGroups = computed(() =>
+    props.groups.map(g => ({
+      ...g,
+      start_date: new Date(g.start_date),
+      end_date: new Date(g.end_date),
+    })),
+  )
+
   const globalDateRange = computed(() => {
-    if (props.groups.length === 0) return { min: new Date(), max: new Date() }
-    let minDate = new Date(props.groups[0].startDate)
-    let maxDate = new Date(props.groups[0].endDate)
-    for (const g of props.groups) {
-      if (g.startDate < minDate) minDate = g.startDate
-      if (g.endDate > maxDate) maxDate = g.endDate
+    const groups = normalizedGroups.value
+    if (groups.length === 0) return { min: new Date(), max: new Date() }
+    let minDate = groups[0].start_date
+    let maxDate = groups[0].end_date
+    for (const g of groups) {
+      if (g.start_date < minDate) minDate = g.start_date
+      if (g.end_date > maxDate) maxDate = g.end_date
     }
     const paddingDays = 5
     return {
@@ -153,8 +146,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
   })
 
   const canvasWidth = computed(() => totalDays.value * pixelsPerDay.value + leftPanelWidth)
-  const canvasHeight = computed(() => props.groups.length * rowHeight + 60)
-
+  const canvasHeight = computed(() => normalizedGroups.value.length * rowHeight + 60)
   // Размеры видимой области
   const viewportWidth = ref(0)
   const viewportHeight = ref(0)
@@ -186,18 +178,18 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
     return daysSinceMin * pixelsPerDay.value - offsetX.value * pixelsPerDay.value + leftPanelWidth
   }
 
-  function groupStartX (group: Group) {
-    return dateToX(group.startDate)
+  function groupStartX (group: SimpleGroupResponse) {
+    return dateToX(group.start_date)
   }
-  function groupEndX (group: Group) {
-    return dateToX(group.endDate)
+  function groupEndX (group: SimpleGroupResponse) {
+    return dateToX(group.end_date)
   }
-  function groupWidth (group: Group) {
+  function groupWidth (group: SimpleGroupResponse) {
     return groupEndX(group) - groupStartX(group)
   }
-  function progressWidth (group: Group) {
-    const totalDuration = group.endDate.getTime() - group.startDate.getTime()
-    const elapsed = (group.progress / 100) * totalDuration
+  function progressWidth (group: SimpleGroupResponse) {
+    const totalDuration = group.end_date.getTime() - group.start_date.getTime()
+    const elapsed = (group.average_progress / 100) * totalDuration
     const elapsedDays = elapsed / 86_400_000
     return elapsedDays * pixelsPerDay.value
   }
@@ -214,11 +206,9 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
     if (!ctx) return
 
     clampOffsets()
-
     canvas.width = canvasWidth.value
     canvas.height = canvasHeight.value
     ctx.clearRect(0, 0, canvas.width, canvas.height)
-
     ctx.fillStyle = '#ffffff'
     ctx.fillRect(0, 0, canvas.width, canvas.height)
 
@@ -226,7 +216,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
     drawGrid(ctx)
 
     // Полосы групп
-    for (const [idx, group] of props.groups.entries()) {
+    for (const [idx, group] of normalizedGroups.value.entries()) {
       const y = groupY(idx)
       const startX = groupStartX(group)
       const width = groupWidth(group)
@@ -246,7 +236,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
       ctx.font = '12px "Segoe UI"'
       ctx.fillStyle = '#0d47a1'
-      const text = group.name
+      const text = group.course_title
       const textWidth = ctx.measureText(text).width
       if (textWidth < width - 10) {
         ctx.fillText(text, startX + 5, y + rowHeight / 2 + 3)
@@ -256,15 +246,15 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
       ctx.fillStyle = '#333'
       ctx.font = '10px "Segoe UI"'
-      ctx.fillText(`${group.progress}%`, startX + width - 25, y + rowHeight / 2 + 3)
+      ctx.fillText(`${group.average_progress}%`, startX + width - 25, y + rowHeight / 2 + 3)
 
-      if (groupConflicts.value[group.id]) {
-        ctx.save()
-        ctx.globalAlpha = 0.3
-        ctx.fillStyle = '#ff9800'
-        ctx.fillRect(startX, y + 5, width, rowHeight - 10)
-        ctx.restore()
-      }
+      // if (groupConflicts.value[group.id]) {
+      //   ctx.save()
+      //   ctx.globalAlpha = 0.3
+      //   ctx.fillStyle = '#ff9800'
+      //   ctx.fillRect(startX, y + 5, width, rowHeight - 10)
+      //   ctx.restore()
+      // }
     }
 
     // Левая панель с названиями
@@ -272,12 +262,12 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
     ctx.fillRect(0, 0, leftPanelWidth, canvas.height)
     ctx.strokeStyle = '#ddd'
     ctx.strokeRect(0, 0, leftPanelWidth, canvas.height)
-    for (const [idx, group] of props.groups.entries()) {
+    for (const [idx, group] of normalizedGroups.value.entries()) {
       const y = groupY(idx)
       if (y + rowHeight < 0 || y > canvasHeight.value) continue
       ctx.fillStyle = '#333'
       ctx.font = '13px "Segoe UI"'
-      ctx.fillText(group.name, 10, y + rowHeight / 2 + 3)
+      ctx.fillText(group.course_title, 10, y + rowHeight / 2 + 3)
     }
   }
 
@@ -418,32 +408,32 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
   }
 
   // ---------- Конфликты в расписании ----------
-  const groupConflicts = computed(() => {
-    const conflictsMap: Record<number, boolean> = {}
-    if (props.groups.length === 0) return conflictsMap
-    const employeeGroups = new Map<number, Array<{ groupId: number, start: Date, end: Date }>>()
-    for (const group of props.groups) {
-      for (const emp of group.members) {
-        if (!employeeGroups.has(emp.id)) employeeGroups.set(emp.id, [])
-        employeeGroups.get(emp.id)!.push({ groupId: group.id, start: group.startDate, end: group.endDate })
-      }
-    }
-    for (const intervals of employeeGroups.values()) {
-      for (let i = 0; i < intervals.length; i++) {
-        for (let j = i + 1; j < intervals.length; j++) {
-          const a = intervals[i], b = intervals[j]
-          if (a.start < b.end && b.start < a.end) {
-            conflictsMap[a.groupId] = true
-            conflictsMap[b.groupId] = true
-          }
-        }
-      }
-    }
-    if (Object.keys(conflictsMap).length > 0 && !showConflictSnackbar.value) {
-      showConflictSnackbar.value = true
-    }
-    return conflictsMap
-  })
+  // const groupConflicts = computed(() => {
+  //   const conflictsMap: Record<number, boolean> = {}
+  //   if (props.groups.length === 0) return conflictsMap
+  //   const employeeGroups = new Map<number, Array<{ groupId: number, start: Date, end: Date }>>()
+  //   for (const group of props.groups) {
+  //     for (const emp of group.members) {
+  //       if (!employeeGroups.has(emp.id)) employeeGroups.set(emp.id, [])
+  //       employeeGroups.get(emp.id)!.push({ groupId: group.id, start: group.startDate, end: group.endDate })
+  //     }
+  //   }
+  //   for (const intervals of employeeGroups.values()) {
+  //     for (let i = 0; i < intervals.length; i++) {
+  //       for (let j = i + 1; j < intervals.length; j++) {
+  //         const a = intervals[i], b = intervals[j]
+  //         if (a.start < b.end && b.start < a.end) {
+  //           conflictsMap[a.groupId] = true
+  //           conflictsMap[b.groupId] = true
+  //         }
+  //       }
+  //     }
+  //   }
+  //   if (Object.keys(conflictsMap).length > 0 && !showConflictSnackbar.value) {
+  //     showConflictSnackbar.value = true
+  //   }
+  //   return conflictsMap
+  // })
 
   // ---------- Клик по полосе для детализации ----------
   function handleCanvasClick (event: MouseEvent) {
@@ -455,8 +445,8 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
     const clickX = (event.clientX - rect.left) * scaleX
     const clickY = (event.clientY - rect.top) * scaleY
     const rowIndex = Math.floor((clickY - 40 + offsetY.value) / rowHeight)
-    if (rowIndex >= 0 && rowIndex < props.groups.length) {
-      const group = props.groups[rowIndex]
+    if (rowIndex >= 0 && rowIndex < normalizedGroups.value.length) {
+      const group = normalizedGroups.value[rowIndex]
       const startX = groupStartX(group)
       const endX = groupEndX(group)
       if (clickX >= startX && clickX <= endX) {
@@ -494,8 +484,9 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
     nextTick(() => draw())
   })
 
-  function formatDate (date: Date): string {
-    return date.toLocaleDateString('ru-RU')
+  function formatDate (date: Date | string): string {
+    const d = typeof date === 'string' ? new Date(date) : date
+    return d.toLocaleDateString('ru-RU')
   }
 </script>
 
