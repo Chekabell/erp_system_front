@@ -1,6 +1,6 @@
 <template>
   <v-container class="pa-6" fluid>
-    <!-- Header -->
+    <!-- 🔹 Header -->
     <v-card class="mb-6 pa-4 rounded-lg" elevation="2">
       <div class="d-flex flex-wrap align-center justify-space-between ga-4">
         <div>
@@ -17,7 +17,8 @@
             variant="solo"
             @keyup.enter="handleSearch"
           />
-          <v-btn color="primary" disabled prepend-icon="mdi-plus">Создать спецификацию</v-btn>
+          <v-btn color="primary" :loading="specificationsStore.state.loading" @click="handleSearch">Найти</v-btn>
+          <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreateDialog">Создать</v-btn>
         </div>
       </div>
     </v-card>
@@ -26,9 +27,12 @@
     <div v-if="specificationsStore.state.loading && !specificationsStore.state.isFetched" class="d-flex justify-center mt-8">
       <v-progress-circular color="primary" indeterminate size="64" />
     </div>
-    <v-alert v-else-if="specificationsStore.state.error" class="mt-4" type="error" variant="tonal">{{ specificationsStore.state.error }}</v-alert>
+    <v-alert v-else-if="specificationsStore.state.error" class="mt-4" type="error" variant="tonal">
+      {{ specificationsStore.state.error }}
+      <v-btn class="ml-2" color="error" variant="text" @click="specificationsStore.fetch({}, true)">Повторить</v-btn>
+    </v-alert>
 
-    <!-- Table -->
+    <!-- 🔹 Table -->
     <v-card v-else class="rounded-lg overflow-hidden" elevation="2">
       <v-data-table
         class="elevation-0"
@@ -39,32 +43,39 @@
         no-data-text="Спецификации не найдены"
         :search="search"
       >
+        <!-- Реквизиты -->
         <template #item.docInfo="{ item }">
           <div><div class="font-weight-bold text-primary">№ {{ item.number }}</div><div class="text-caption text-medium-emphasis">{{ formatDate(item.date) }}</div></div>
         </template>
+        <!-- Компания -->
         <template #item.company="{ item }">
           <v-chip color="secondary" size="small" variant="tonal"><v-icon size="small" start>mdi-office-building-marker</v-icon>{{ item.company.name }}</v-chip>
         </template>
+        <!-- Группы -->
         <template #item.groups="{ item }">
           <v-chip class="font-weight-bold" size="small" variant="outlined">{{ item.groups.length }}</v-chip>
         </template>
+        <!-- Суммы -->
         <template #item.subtotal="{ item }"><div class="text-right font-weight-medium">{{ formatCurrency(item.total_no_vat) }}</div></template>
         <template #item.vat="{ item }"><div class="text-right text-medium-emphasis">{{ formatCurrency(item.vat_amount) }}</div></template>
         <template #item.total="{ item }"><div class="text-right font-weight-bold text-success">{{ formatCurrency(item.total_with_vat) }}</div></template>
+        <!-- Действия -->
         <template #item.actions="{ item }">
-          <v-btn
-            color="primary"
-            icon="mdi-eye"
-            size="small"
-            variant="text"
-            @click="openDetail(item)"
-          />
           <v-btn
             color="secondary"
             disabled
             icon="mdi-printer"
             size="small"
+            title="Экспорт будет доступен в следующей версии"
             variant="text"
+          />
+          <v-btn
+            color="error"
+            icon="mdi-delete-outline"
+            size="small"
+            title="Удалить спецификацию"
+            variant="text"
+            @click.stop="openDeleteDialog(item)"
           />
         </template>
       </v-data-table>
@@ -137,12 +148,96 @@
         <v-card-actions class="pa-4"><v-spacer /><v-btn variant="text" @click="dialog = false">Закрыть</v-btn><v-btn color="primary" disabled prepend-icon="mdi-file-export">Экспорт в PDF</v-btn></v-card-actions>
       </v-card>
     </v-dialog>
+    <!-- 🔹 Dialog: Создание спецификации -->
+    <v-dialog v-model="createDialog" max-width="520">
+      <v-card>
+        <v-card-title class="text-h6 font-weight-bold pt-4">Новая спецификация</v-card-title>
+        <v-card-subtitle class="px-4 pb-2">Заполните обязательные поля для создания юридического документа</v-card-subtitle>
+        <v-divider class="my-2" />
+
+        <v-card-text class="pa-4">
+          <v-form v-model="formValid" @submit.prevent="submitCreate">
+            <v-text-field
+              v-model="form.number"
+              class="mb-3"
+              counter="50"
+              density="compact"
+              label="Номер спецификации *"
+              placeholder="СП-2025-001"
+              :rules="[
+                v => !!v?.trim() || 'Номер обязателен',
+                v => (v?.length <= 50) || 'Максимум 50 символов'
+              ]"
+              variant="outlined"
+            />
+            <v-text-field
+              v-model="form.date"
+              class="mb-3"
+              density="compact"
+              label="Дата спецификации *"
+              :rules="[v => !!v || 'Укажите дату']"
+              type="date"
+              variant="outlined"
+            />
+            <v-autocomplete
+              v-model="form.company_id"
+              density="compact"
+              item-title="name"
+              item-value="id"
+              :items="companiesStore.state.items"
+              label="Компания-заказчик *"
+              prepend-inner-icon="mdi-office-building-marker"
+              :rules="[v => !!v || 'Выберите компанию']"
+              variant="outlined"
+            />
+            <v-alert class="mt-2" density="compact" type="info" variant="tonal">
+              <template #title>💡 Подсказка</template>
+              <span class="text-caption">После создания спецификации вы сможете добавить в неё учебные группы через страницу "Группы".</span>
+            </v-alert>
+          </v-form>
+        </v-card-text>
+
+        <v-divider />
+        <v-card-actions class="pa-4">
+          <v-spacer />
+          <v-btn variant="text" @click="createDialog = false">Отмена</v-btn>
+          <v-btn color="primary" :disabled="!formValid" :loading="createLoading" @click="submitCreate">Создать</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- 🔹 Dialog: Подтверждение удаления -->
+    <v-dialog v-model="deleteDialog" max-width="420">
+      <v-card>
+        <v-card-title class="text-h6 font-weight-bold pt-4 text-error">Удалить спецификацию?</v-card-title>
+        <v-card-subtitle class="px-4 pb-2">Это действие необратимо</v-card-subtitle>
+        <v-divider class="my-2" />
+
+        <v-card-text class="pa-4">
+          <p class="text-body-1">
+            Вы уверены, что хотите удалить спецификацию
+            <strong class="text-primary">№ {{ specToDelete?.number }}</strong>?
+          </p>
+          <p class="text-caption text-medium-emphasis mt-2">
+            Все привязанные учебные группы останутся в системе, но потеряют ссылку на эту спецификацию.
+          </p>
+        </v-card-text>
+
+        <v-divider />
+        <v-card-actions class="pa-4">
+          <v-spacer />
+          <v-btn variant="text" @click="deleteDialog = false">Отмена</v-btn>
+          <v-btn color="error" :loading="deleteLoading" @click="submitDelete">Удалить</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-container>
 </template>
 
 <script setup lang="ts">
-  import type { SpecificationResponse } from '@/types/api'
+  import type { SpecificationRequest, SpecificationResponse } from '@/types/api'
   import { computed, onMounted, ref } from 'vue'
+  import { companiesStore } from '@/stores/companiesStore'
   import { specificationsStore } from '@/stores/specificationsStore'
 
   // 🔍 Поиск и пагинация
@@ -156,22 +251,95 @@
     { title: 'Без НДС', key: 'subtotal', sortable: true, align: 'end' },
     { title: 'НДС (22%)', key: 'vat', sortable: true, align: 'end' },
     { title: 'Итого', key: 'total', sortable: true, align: 'end' },
-    { title: '', key: 'actions', sortable: false, width: 100, align: 'end' },
+    { title: '', key: 'actions', sortable: false, width: 120, align: 'end' },
   ]
 
-  const formatCurrency = (value: number): string => new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 0 }).format(value)
-  function formatDate (dateStr: string): string {
-    if (!dateStr) return '--'; const [y, m, d] = dateStr.split('-'); return `${d}.${m}.${y}`
-  }
-
   function handleSearch () {
-    specificationsStore.reset(); specificationsStore.fetch({ search: search.value || undefined })
-  }
-  function openDetail (spec: SpecificationResponse) {
-    selectedSpec.value = spec; dialog.value = true
+    specificationsStore.reset()
+    specificationsStore.fetch({ search: search.value || undefined })
   }
 
-  onMounted(() => specificationsStore.fetch())
+  // 📖 Просмотр спецификации
+  const dialog = ref(false)
+  const selectedSpec = ref<SpecificationResponse | null>(null)
+
+  function openDetail (spec: SpecificationResponse) {
+    selectedSpec.value = spec
+    dialog.value = true
+  }
+
+  // ➕ Создание спецификации
+  const createDialog = ref(false)
+  const formValid = ref(false)
+  const createLoading = ref(false)
+  const form = ref<SpecificationRequest>({
+    number: '',
+    date: '',
+    company_id: 0,
+  })
+
+  function openCreateDialog () {
+    form.value = { number: '', date: '', company_id: 0 }
+    formValid.value = false
+    createDialog.value = true
+  }
+
+  async function submitCreate () {
+    if (!formValid.value) return
+    createLoading.value = true
+    try {
+      const payload: SpecificationRequest = { ...form.value }
+      await specificationsStore.create(payload)
+      createDialog.value = false
+      specificationsStore.fetch() // Обновляем список и пагинацию
+    } catch (error) {
+      console.error('Ошибка создания спецификации:', error)
+      alert('Не удалось создать спецификацию. Проверьте данные.')
+    } finally {
+      createLoading.value = false
+    }
+  }
+
+  // 🗑 Удаление спецификации
+  const deleteDialog = ref(false)
+  const deleteLoading = ref(false)
+  const specToDelete = ref<SpecificationResponse | null>(null)
+
+  function openDeleteDialog (spec: SpecificationResponse) {
+    specToDelete.value = spec
+    deleteDialog.value = true
+  }
+
+  async function submitDelete () {
+    if (!specToDelete.value) return
+    deleteLoading.value = true
+    try {
+      await specificationsStore.remove(specToDelete.value.id)
+      deleteDialog.value = false
+      specificationsStore.fetch() // Обновляем список и пагинацию
+    } catch (error) {
+      console.error('Ошибка удаления спецификации:', error)
+      alert('Не удалось удалить спецификацию.')
+    } finally {
+      deleteLoading.value = false
+    }
+  }
+
+  // 🛠 Утилиты
+  function formatCurrency (value: number): string {
+    return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 0 }).format(value)
+  }
+
+  function formatDate (dateStr: string): string {
+    if (!dateStr) return '--'
+    const [y, m, d] = dateStr.split('-')
+    return `${d}.${m}.${y}`
+  }
+
+  onMounted(() => {
+    specificationsStore.fetch()
+    if (!companiesStore.state.isFetched) companiesStore.fetch() // Загружаем компании для селекта
+  })
 </script>
 
 <style scoped>

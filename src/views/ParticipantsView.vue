@@ -1,28 +1,13 @@
 <template>
   <v-container class="pa-6" fluid>
-    <!-- Header -->
-    <v-card class="mb-6 pa-4 rounded-lg" elevation="2">
-      <div class="d-flex flex-wrap align-center justify-space-between ga-4">
-        <div>
-          <h1 class="text-h4 font-weight-bold mb-1">Участники обучения</h1>
-          <p class="text-body-2 text-medium-emphasis">Сотрудники компаний, проходящие обучение</p>
-        </div>
-        <div class="d-flex ga-3" style="max-width: 600px; flex: 1;">
-          <v-text-field
-            v-model="search"
-            density="compact"
-            hide-details
-            label="Поиск по ФИО, email или компании..."
-            prepend-inner-icon="mdi-magnify"
-            variant="solo"
-            @keyup.enter="handleSearch"
-          />
-          <v-btn color="primary" :loading="employeesStore.state.loading" @click="handleSearch">Найти</v-btn>
-          <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreateDialog">Создать</v-btn>
-        </div>
-      </div>
-    </v-card>
+    <!-- 🔹 Header -->
+    <v-row align="center">
+      <v-col>
+        <h1 class="text-h4 font-weight-semibold" style="font-size: 40px;">Сотрудники</h1>
+      </v-col>
+    </v-row>
 
+    <v-divider class="my-6" />
     <!-- 🔹 Loading / Error -->
     <div v-if="employeesStore.state.loading && !employeesStore.state.isFetched" class="d-flex justify-center mt-8">
       <v-progress-circular color="primary" indeterminate size="64" />
@@ -41,16 +26,14 @@
       >
         <template #item.full_name="{ item }">
           <div class="d-flex align-center ga-3">
-            <v-avatar class="text-white text-h6" :color="getAvatarColor(item.full_name)" size="40">{{ getInitials(item.full_name) }}</v-avatar>
-            <div><div class="font-weight-medium">{{ item.full_name }}</div><div class="text-caption text-medium-emphasis">{{ item.email }}</div></div>
+            <div class="font-weight-medium">{{ item.full_name }}</div>
           </div>
         </template>
-        <template #item.company="{ item }">
-          <v-chip color="primary" size="small" variant="tonal"><v-icon size="small" start>mdi-office-building-marker</v-icon>{{ item.company?.name || 'Не указана' }}</v-chip>
+        <template #item.email="{ item }">
+          <div class="text-caption text-medium-emphasis">{{ item.email }}</div>
         </template>
-        <template #item.groups="{ item }">
-          <v-chip v-if="item.groups?.length" size="small" variant="outlined"><v-icon size="x-small" start>mdi-account-group</v-icon>{{ item.groups.length }} гр.</v-chip>
-          <span v-else class="text-medium-emphasis text-caption">Не в группах</span>
+        <template #item.company="{ item }">
+          <div class="text-caption text-medium-emphasis">{{ item.company.name }}</div>
         </template>
         <template #item.actions="{ item }">
           <v-btn color="primary" icon="mdi-pencil" size="small" variant="text" />
@@ -119,14 +102,14 @@
   import { computed, onMounted, ref } from 'vue'
   import { employeesStore } from '@/stores/employeesStore'
 
-// 🔍 Поиск и пагинация
-const search = ref('')
-const totalPages = computed(() => Math.ceil(employeesStore.state.pagination.count / employeesStore.state.pagination.pageSize) || 1)
+  // 🔍 Поиск и пагинация
+  const search = ref('')
+  const totalPages = computed(() => Math.ceil(employeesStore.state.pagination.count / employeesStore.state.pagination.pageSize) || 1)
 
   const headers = [
-    { title: 'Сотрудник', key: 'full_name', width: 300 },
-    { title: 'Компания', key: 'company', sortable: false },
-    { title: 'Группы', key: 'groups', sortable: false, width: 120, align: 'center' },
+    { title: 'ФИО', key: 'full_name', width: 300 },
+    { title: 'Email', key: 'email', sortable: false },
+    { title: 'Компания', key: 'company', sortable: false, width: 120, align: 'center' },
     { title: '', key: 'actions', sortable: false, width: 100, align: 'end' },
   ]
 
@@ -137,8 +120,6 @@ const totalPages = computed(() => Math.ceil(employeesStore.state.pagination.coun
   function openDetail (item: EmployeeResponse) {
     selectedEmployee.value = item; dialog.value = true
   }
-  const getInitials = (n: string) => n ? (n.split(/\s+/)[0]?.[0] || '') + (n.split(/\s+/)[1]?.[0] || '') : '?'
-  const getAvatarColor = (n: string) => ['primary', 'success', 'warning', 'error', 'info', 'purple', 'teal', 'indigo'][Math.abs(n.split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % 8]
 
   onMounted(() => employeesStore.fetch())
 </script>

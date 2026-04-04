@@ -12,7 +12,7 @@
       <v-divider />
     </template>
 
-    <v-list density="compact" nav class="bg-primary " >
+    <v-list class="bg-primary " density="compact" nav>
       <v-list-item
         v-for="item in menuItems"
         :key="item.route"
@@ -41,10 +41,10 @@
 
   interface MenuItem { title: string, route: string, icon: string }
   const menuItems: MenuItem[] = [
-    { title: 'Главная', route: '/', icon: 'mdi-view-dashboard' },
-    { title: 'Курсы обучения', route: '/courses', icon: 'mdi-book-open-page-variant' },
-    { title: 'Участники', route: '/participants', icon: 'mdi-account-group' },
+    { title: 'Статистика', route: '/', icon: 'mdi-view-dashboard' },
     { title: 'Учебные группы', route: '/groups', icon: 'mdi-account-multiple-check' },
+    { title: 'Сотрудники', route: '/participants', icon: 'mdi-account-group' },
+    { title: 'Курсы обучения', route: '/courses', icon: 'mdi-book-open-page-variant' },
     { title: 'Спецификации', route: '/specifications', icon: 'mdi-file-document-edit' },
     { title: 'Компании', route: '/companies', icon: 'mdi-office-building-marker' },
   ]
@@ -87,6 +87,5 @@
     gap: 10px;
     display: grid;
 }
-
 
 </style>
