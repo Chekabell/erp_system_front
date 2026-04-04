@@ -1,22 +1,43 @@
 <template>
   <v-container fluid class="pa-6">
+    <!-- Header -->
     <v-card class="mb-6 pa-4 rounded-lg" elevation="2">
       <div class="d-flex flex-wrap align-center justify-space-between ga-4">
-        <h1 class="text-h4 font-weight-bold">Участники обучения</h1>
+        <div>
+          <h1 class="text-h4 font-weight-bold mb-1">Участники обучения</h1>
+          <p class="text-body-2 text-medium-emphasis">Сотрудники компаний, проходящие обучение</p>
+        </div>
         <div class="d-flex ga-3" style="max-width: 500px; flex: 1;">
-          <v-text-field v-model="search" prepend-inner-icon="mdi-magnify" label="Поиск по ФИО, email или компании..." density="compact" variant="solo" hide-details @keyup.enter="handleSearch" />
+          <v-text-field
+            v-model="search"
+            prepend-inner-icon="mdi-magnify"
+            label="Поиск по ФИО, email или компании..."
+            density="compact"
+            variant="solo"
+            hide-details
+            @keyup.enter="handleSearch"
+          />
           <v-btn color="primary" :loading="employeesStore.state.loading" @click="handleSearch">Найти</v-btn>
         </div>
       </div>
     </v-card>
 
+    <!-- Loading / Error -->
     <div v-if="employeesStore.state.loading && !employeesStore.state.isFetched" class="d-flex justify-center mt-8">
       <v-progress-circular indeterminate color="primary" size="64" />
     </div>
     <v-alert v-else-if="employeesStore.state.error" type="error" variant="tonal" class="mt-4">{{ employeesStore.state.error }}</v-alert>
 
+    <!-- Table -->
     <v-card v-else elevation="2" class="rounded-lg overflow-hidden">
-      <v-data-table :headers="headers" :items="employeesStore.state.items" class="elevation-0" hover no-data-text="Участники не найдены">
+      <v-data-table
+        :headers="headers"
+        :items="employeesStore.state.items"
+        class="elevation-0"
+        hover
+        no-data-text="Участники не найдены"
+        hide-default-footer
+      >
         <template v-slot:item.full_name="{ item }">
           <div class="d-flex align-center ga-3">
             <v-avatar :color="getAvatarColor(item.full_name)" size="40" class="text-white text-h6">{{ getInitials(item.full_name) }}</v-avatar>
@@ -35,12 +56,35 @@
           <v-btn icon="mdi-eye" variant="text" color="secondary" size="small" @click="openDetail(item)" />
         </template>
       </v-data-table>
+
+      <!-- Footer: Page Size & Pagination -->
+      <v-divider></v-divider>
+      <div class="d-flex justify-space-between align-center pa-3 bg-surface-variant">
+        <div class="d-flex align-center ga-2">
+          <span class="text-caption text-medium-emphasis">Показывать по:</span>
+          <v-select
+            v-model="employeesStore.state.pagination.pageSize"
+            :items="[10, 20, 50, 100]"
+            density="compact"
+            variant="outlined"
+            hide-details
+            style="width: 80px;"
+            @update:model-value="employeesStore.changePageSize"
+          ></v-select>
+          <span class="text-caption text-medium-emphasis">из {{ employeesStore.state.pagination.count }}</span>
+        </div>
+
+        <v-pagination
+          v-if="totalPages > 1"
+          :model-value="employeesStore.state.pagination.page"
+          :length="totalPages"
+          size="small"
+          @update:model-value="employeesStore.goToPage"
+        />
+      </div>
     </v-card>
 
-    <div class="d-flex justify-center mt-6" v-if="employeesStore.state.pagination.count > employeesStore.state.pagination.pageSize">
-      <v-pagination :model-value="employeesStore.state.pagination.page" :length="Math.ceil(employeesStore.state.pagination.count / employeesStore.state.pagination.pageSize)" @update:model-value="employeesStore.goToPage" />
-    </div>
-
+    <!-- Modal -->
     <v-dialog v-model="dialog" max-width="600">
       <v-card v-if="selectedEmployee">
         <v-card-title class="text-h5 font-weight-bold pt-4 d-flex align-center ga-3">
@@ -64,13 +108,16 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, onMounted } from 'vue'
+  import { ref, computed, onMounted } from 'vue'
   import { employeesStore } from '@/stores/employeesStore'
-  import type { Employee } from '@/types/api'
+  import type { EmployeeResponse } from '@/types/api'
 
   const search = ref('')
   const dialog = ref(false)
-  const selectedEmployee = ref<Employee | null>(null)
+  const selectedEmployee = ref<EmployeeResponse | null>(null)
+
+  const totalPages = computed(() => Math.ceil(employeesStore.state.pagination.count / employeesStore.state.pagination.pageSize) || 1)
+
   const headers = [
     { title: 'Сотрудник', key: 'full_name', width: 300 },
     { title: 'Компания', key: 'company', sortable: false },
@@ -82,9 +129,13 @@
     employeesStore.reset()
     employeesStore.fetch({ search: search.value || undefined })
   }
-  const openDetail = (item: Employee) => { selectedEmployee.value = item; dialog.value = true }
+  const openDetail = (item: EmployeeResponse) => { selectedEmployee.value = item; dialog.value = true }
   const getInitials = (n: string) => n ? (n.split(/\s+/)[0]?.[0]||'') + (n.split(/\s+/)[1]?.[0]||'') : '?'
   const getAvatarColor = (n: string) => ['primary','success','warning','error','info','purple','teal','indigo'][Math.abs(n.split('').reduce((a,c)=>a+c.charCodeAt(0),0)) % 8]
 
   onMounted(() => employeesStore.fetch())
 </script>
+
+<style scoped>
+.v-data-table__wrapper { transition: opacity 0.2s ease; }
+</style>

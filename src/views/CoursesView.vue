@@ -1,23 +1,42 @@
 <template>
   <v-container fluid class="pa-6">
+    <!-- Header -->
     <v-card class="mb-6 pa-4 rounded-lg" elevation="2">
       <div class="d-flex flex-wrap align-center justify-space-between ga-4">
-        <h1 class="text-h4 font-weight-bold">Курсы обучения</h1>
+        <div>
+          <h1 class="text-h4 font-weight-bold mb-1">Курсы обучения</h1>
+          <p class="text-body-2 text-medium-emphasis">Образовательные программы, доступные для записи участников</p>
+        </div>
         <div class="d-flex ga-3" style="max-width: 500px; flex: 1;">
-          <v-text-field v-model="search" prepend-inner-icon="mdi-magnify" label="Поиск по названию..." density="compact" variant="solo" hide-details @keyup.enter="handleSearch" />
+          <v-text-field
+            v-model="search"
+            prepend-inner-icon="mdi-magnify"
+            label="Поиск по названию курса..."
+            density="compact"
+            variant="solo"
+            hide-details
+            @keyup.enter="handleSearch"
+          />
           <v-btn color="primary" :loading="coursesStore.state.loading" @click="handleSearch">Найти</v-btn>
         </div>
       </div>
     </v-card>
 
+    <!-- Loading / Error -->
     <div v-if="coursesStore.state.loading && !coursesStore.state.isFetched" class="d-flex justify-center mt-8">
       <v-progress-circular indeterminate color="primary" size="64" />
     </div>
     <v-alert v-else-if="coursesStore.state.error" type="error" variant="tonal" class="mt-4">{{ coursesStore.state.error }}</v-alert>
 
+    <!-- Grid -->
     <v-row v-else dense>
       <v-col v-for="course in coursesStore.state.items" :key="course.id" cols="12" sm="6" md="4" lg="3">
-        <v-card hover elevation="2" class="rounded-lg pa-4 card-hover-transition cursor-pointer" @click="openModal(course)">
+        <v-card
+          hover
+          elevation="2"
+          class="rounded-lg pa-4 card-hover-transition cursor-pointer h-100"
+          @click="openModal(course)"
+        >
           <v-card-item class="pb-2">
             <template v-slot:prepend>
               <v-avatar :color="getAccentColor(course.id)" size="44" class="text-white">
@@ -40,11 +59,32 @@
 
     <v-empty-state v-if="!coursesStore.state.loading && coursesStore.state.items.length === 0" title="Курсы не найдены" icon="mdi-book-off" class="mt-8" />
 
-    <div class="d-flex justify-center mt-6" v-if="coursesStore.state.pagination.count > coursesStore.state.pagination.pageSize">
-      <v-pagination :model-value="coursesStore.state.pagination.page" :length="Math.ceil(coursesStore.state.pagination.count / coursesStore.state.pagination.pageSize)" @update:model-value="coursesStore.goToPage" />
+    <!-- Footer: Page Size & Pagination -->
+    <div class="d-flex justify-space-between align-center mt-6 pa-3 bg-surface-variant rounded-lg" v-if="totalPages > 0">
+      <div class="d-flex align-center ga-2">
+        <span class="text-caption text-medium-emphasis">Показывать по:</span>
+        <v-select
+          v-model="coursesStore.state.pagination.pageSize"
+          :items="[10, 20, 50, 100]"
+          density="compact"
+          variant="outlined"
+          hide-details
+          style="width: 80px;"
+          @update:model-value="coursesStore.changePageSize"
+        ></v-select>
+        <span class="text-caption text-medium-emphasis">из {{ coursesStore.state.pagination.count }}</span>
+      </div>
+
+      <v-pagination
+        v-if="totalPages > 1"
+        :model-value="coursesStore.state.pagination.page"
+        :length="totalPages"
+        :total-visible="7"
+        @update:model-value="coursesStore.goToPage"
+      />
     </div>
 
-    <!-- Modal (оставлен без изменений, только данные берутся из стора) -->
+    <!-- Modal -->
     <v-dialog v-model="dialog" max-width="650" scrollable>
       <v-card v-if="selectedCourse" class="rounded-lg">
         <v-card-title class="text-h5 font-weight-bold pt-4">{{ selectedCourse.title }}</v-card-title>
@@ -64,19 +104,21 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, onMounted } from 'vue'
+  import { ref, computed, onMounted } from 'vue'
   import { coursesStore } from '@/stores/coursesStore'
-  import type { Course } from '@/types/api'
+  import type { CourseResponse } from '@/types/api'
 
   const search = ref('')
   const dialog = ref(false)
-  const selectedCourse = ref<Course | null>(null)
+  const selectedCourse = ref<CourseResponse | null>(null)
+
+  const totalPages = computed(() => Math.ceil(coursesStore.state.pagination.count / coursesStore.state.pagination.pageSize) || 1)
 
   const handleSearch = () => {
     coursesStore.reset()
     coursesStore.fetch({ search: search.value || undefined })
   }
-  const openModal = (course: Course) => { selectedCourse.value = course; dialog.value = true }
+  const openModal = (course: CourseResponse) => { selectedCourse.value = course; dialog.value = true }
   const getAccentColor = (id: number) => ['primary','success','warning','info','purple','teal','indigo','deep-orange'][id % 8]
   const formatPrice = (p: string) => new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 0 }).format(parseFloat(p) || 0)
 

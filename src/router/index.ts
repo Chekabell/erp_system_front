@@ -23,7 +23,6 @@ const routes: RouteRecordRaw[] = [
       { path: 'specifications', name: 'specifications', component: () => import('@/views/SpecificationsView.vue'), meta: { title: 'Спецификации' } },
       { path: 'companies', name: 'companies', component: () => import('@/views/CompaniesView.vue'), meta: { title: 'Компании' } },
       { path: 'gantt', name: 'gantt', component: () => import('@/views/GanttChartView.vue'), meta: { title: 'Диаграмма Ганта' } },
-      { path: 'integration', name: 'integration', component: () => import('@/views/IntegrationView.vue'), meta: { title: 'XML Интеграция' } },
     ],
   },
 ]

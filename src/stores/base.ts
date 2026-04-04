@@ -11,18 +11,26 @@ export interface PaginationMeta {
   pageSize: number
 }
 
+export interface StoreState<T> {
+  items: T[]
+  loading: boolean
+  error: string | null
+  pagination: PaginationMeta
+  isFetched: boolean
+}
+
 export function createEntityStore<T>(endpoint: string) {
-  const state = reactive({
-    items: [] as T[],
+  const state = reactive<StoreState<T>>({
+    items: [],
     loading: false,
-    error: null as string | null,
+    error: null,
     pagination: {
       count: 0,
-      next: null as string | null,
-      previous: null as string | null,
+      next: null,
+      previous: null,
       page: 1,
       pageSize: 10
-    } as PaginationMeta,
+    },
     isFetched: false
   })
 
@@ -44,7 +52,10 @@ export function createEntityStore<T>(endpoint: string) {
         page_size: state.pagination.pageSize,
         ...params
       }
-      Object.keys(requestParams).forEach(k => requestParams[k] == null && delete requestParams[k])
+      // Удаляем undefined/null значения
+      Object.keys(requestParams).forEach(k => {
+        if (requestParams[k] == null) delete requestParams[k]
+      })
 
       const response = await api.get<PaginatedResponse<T>>(endpoint, { params: requestParams })
 
@@ -56,6 +67,7 @@ export function createEntityStore<T>(endpoint: string) {
       state.isFetched = true
     } catch (err: any) {
       state.error = err.response?.data?.detail || 'Ошибка загрузки данных'
+      console.error(`[Store ${endpoint}] Error:`, err)
     } finally {
       state.loading = false
     }
@@ -94,5 +106,54 @@ export function createEntityStore<T>(endpoint: string) {
     state.pagination.previous = null
   }
 
-  return { state, fetch, goToPage, next, prev, reset, changePageSize }
+  // Методы для создания/обновления/удаления (универсальные)
+  const create = async (data: any) => {
+    try {
+      const response = await api.post<T>(endpoint, data)
+      state.items.unshift(response.data)
+      state.pagination.count += 1
+      return response.data
+    } catch (err: any) {
+      state.error = err.response?.data || 'Ошибка создания'
+      throw err
+    }
+  }
+
+  const update = async (id: number, data: Partial<T>) => {
+    try {
+      const response = await api.patch<T>(`${endpoint}${id}/`, data)
+      const index = state.items.findIndex((item: any) => item.id === id)
+      if (index !== -1) {
+        state.items[index] = response.data
+      }
+      return response.data
+    } catch (err: any) {
+      state.error = err.response?.data || 'Ошибка обновления'
+      throw err
+    }
+  }
+
+  const remove = async (id: number) => {
+    try {
+      await api.delete(`${endpoint}${id}/`)
+      state.items = state.items.filter((item: any) => item.id !== id)
+      state.pagination.count -= 1
+    } catch (err: any) {
+      state.error = err.response?.data || 'Ошибка удаления'
+      throw err
+    }
+  }
+
+  return {
+    state,
+    fetch,
+    goToPage,
+    next,
+    prev,
+    reset,
+    changePageSize,
+    create,
+    update,
+    remove
+  }
 }
