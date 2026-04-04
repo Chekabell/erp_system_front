@@ -241,7 +241,7 @@
               <template v-slot:item="{ props, item }">
                 <v-list-item v-bind="props">
                   <template v-slot:subtitle>
-                    {{ item.raw.company?.name }} • {{ item.raw.email }}
+                   {{ item.raw?.company?.name ?? '—' }} • {{ item.raw?.email ?? '—' }}
                   </template>
                 </v-list-item>
               </template>

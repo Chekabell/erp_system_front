@@ -11,12 +11,12 @@
       <v-divider />
     </template>
 
-    <v-list density="compact" nav>
+    <v-list density="compact" nav class="bg-primary text-h3" >
       <v-list-item
         v-for="item in menuItems"
         :key="item.route"
         active-class="bg-primary-lighten-5"
-        class="my-1"
+        class="bg-primary"
         :prepend-icon="item.icon"
         rounded="lg"
         :title="item.title"
@@ -26,7 +26,7 @@
 
     <template #append>
       <v-divider />
-      <v-list-item class="ma-2" prepend-icon="mdi-chevron-left" :title="rail ? '' : 'Свернуть'" @click="rail = !rail" />
+      <v-list-item class="bg-primary" prepend-icon="mdi-chevron-left" :title="rail ? 'Развернуть' : 'Свернуть'" @click="rail = !rail" />
     </template>
   </v-navigation-drawer>
 </template>
