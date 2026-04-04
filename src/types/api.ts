@@ -1,104 +1,159 @@
-// src/types/api.ts
+/* --- ENUMS --- */
+type GroupStatus = 'planned' | 'in_progress' | 'completed'
+/* --- GET /api/xml/{model_type}/{obj_id}/ --- */
+type XmlExportModelType = 'employee' | 'course'
 
-export interface SimpleCompany {
+/* --- PAGINATION --- */
+interface PaginatedResponse<T> {
+  count: number
+  next: string | null
+  previous: string | null
+  results: T[]
+}
+
+/* --- /api/employees/ --- */
+interface EmployeeResponse {
   id: number
-  code: string
-  name: string
+  full_name: string
+  company: CompanyResponse
+  email: string
+  groups: Array<SimpleGroupResponse>
 }
 
-export interface Company extends SimpleCompany {
-  specifications?: SimpleSpecification[]
-}
-
-export interface Course {
-  id: number
-  title: string
-  description: string | null
-  duration_days: number
-  base_price: string // Decimal as string
-}
-
-export interface SimpleGroup {
-  id: number
-  course_title: string
-  start_date: string
-  end_date: string
-  status: 'planned' | 'in_progress' | 'completed'
-}
-
-export interface SimpleEmployee {
+interface SimpleEmployeeResponse {
   id: number
   full_name: string
   company_name: string
   email: string
 }
 
-export interface SimpleSpecification {
-  id: number
-  date: string
-  number: string
-}
-
-export interface Employee {
-  id: number
+interface EmployeeRequest {
   full_name: string
-  company: SimpleCompany
+  company_id: number
   email: string
-  groups: SimpleGroup[]
+  assign_to_groups: Array<number>
 }
 
-export interface Group {
+/* --- /api/course/ --- */
+interface CourseResponse {
   id: number
-  course: Course
-  specification: SimpleSpecification | null
-  start_date: string
-  end_date: string
-  price_at_creation: string
-  status: 'planned' | 'in_progress' | 'completed'
-  total_cost: string
-  employees_count: number
-  average_progress: number
+  title: string
+  description: string
+  duration_days: number
+  base_price: number
 }
 
-export interface GroupEmployee {
-  id: number
-  group: SimpleGroup
-  employee: SimpleEmployee
-  progress_percent: number
-}
+type CourseRequest = Omit<CourseResponse, 'id'>
 
-export interface Specification {
+/* --- /api/specification/ --- */
+interface SpecificationResponse {
   id: number
-  date: string
+  date: string // YYYY-MM-DD
   number: string
-  company: SimpleCompany
-  groups: SimpleGroup[]
+  company: SimpleCompanyResponse
+  groups: Array<SimpleGroupResponse>
   total_no_vat: number
   vat_amount: number
   total_with_vat: number
 }
 
-export interface GanttItem {
+interface SimpleSpecificationResponse {
+  id: number
+  date: string // YYYY-MM-DD
+  number: string
+}
+
+interface SpecificationRequest {
+  date: string // YYYY-MM-DD
+  number: string
+  company_id: number
+}
+
+/* --- /api/group/ --- */
+interface GroupResponse {
+  id: number
+  course: CourseResponse
+  specification: SimpleSpecificationResponse
+  start_date: string // YYYY-MM-DD
+  end_date: string // YYYY-MM-DD
+  price_at_creation: number
+  status?: GroupStatus
+  total_cost: number
+  employees_count: number
+  average_progress: number
+}
+
+interface SimpleGroupResponse {
   id: number
   course_title: string
+  start_date: string // YYYY-MM-DD
+  end_date: string // YYYY-MM-DD
+  status?: GroupStatus
+  average_progress: number
+}
+
+interface GroupRequest {
+  course_id: number
+  specification_id: number
   start_date: string
   end_date: string
-  progress: number
-  status: string
+  status: GroupStatus
 }
 
-export interface XmlUploadResponse {
-  status: string
-  message: string
+/* --- /api/company/ --- */
+interface CompanyResponse {
+  id: number
+  code: string
+  name: string
+  specifications: Array<SimpleSpecificationResponse>
 }
 
-export interface XmlUploadError {
-  error: string
+type SimpleCompanyResponse = Omit<CompanyResponse, 'id'>
+
+interface CompanyRequest {
+  code: string
+  name: string
 }
 
-export interface PaginatedResponse<T> {
-  count: number
-  next: string | null
-  previous: string | null
-  results: T[]
+/* --- GET /api/group/{id}/employee/ --- */
+interface GroupWithEmployeesResponse {
+  group: SimpleGroupResponse
+  employees: Array<
+    SimpleEmployeeResponse & { progress_percent: number }
+  >
+}
+
+/* --- POST /api/group/{id}/employee/ --- */
+interface GroupEmployeePostResponse {
+  created: Array<number>
+  errors: Array<string>
+}
+
+interface GroupEmployeePostRequest {
+  employee_ids: Array<number>
+  progress_percent: number
+}
+
+/* --- PATCH /api/group/{id}/employee/{id}/ --- */
+interface GroupEmployeePatchResponse {
+  id: number
+  group: SimpleGroupResponse
+  employee: SimpleEmployeeResponse
+  progress_percent: number
+}
+
+interface GroupEmployeePatchRequest {
+  progress_percent: number
+}
+
+/* --- GET /api/gantt-data/ --- */
+interface GanttResponse {
+  min_date: string // YYYY-MM-DD
+  max_date: string // YYYY-MM-DD
+  groups: Array<SimpleGroupResponse>
+}
+
+/* --- POST /api/xml/upload/ --- */
+interface XmlUploadRequest {
+  file: File
 }

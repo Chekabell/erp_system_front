@@ -1,7 +1,7 @@
+import type { PaginatedResponse } from '@/types/api'
 // src/stores/base.ts
 import { reactive } from 'vue'
 import api from '@/api/client'
-import type { PaginatedResponse } from '@/types/api'
 
 export interface PaginationMeta {
   count: number
@@ -11,7 +11,7 @@ export interface PaginationMeta {
   pageSize: number
 }
 
-export function createEntityStore<T>(endpoint: string) {
+export function createEntityStore<T> (endpoint: string) {
   const state = reactive({
     items: [] as T[],
     loading: false,
@@ -21,19 +21,23 @@ export function createEntityStore<T>(endpoint: string) {
       next: null as string | null,
       previous: null as string | null,
       page: 1,
-      pageSize: 10
+      pageSize: 10,
     } as PaginationMeta,
-    isFetched: false
+    isFetched: false,
   })
 
   const extractPage = (url: string | null): number | null => {
-    if (!url) return null
+    if (!url) {
+      return null
+    }
     const match = url.match(/[?&]page=(\d+)/)
-    return match ? parseInt(match[1], 10) : null
+    return match ? Number.parseInt(match[1], 10) : null
   }
 
   const fetch = async (params: Record<string, any> = {}, force = false) => {
-    if (state.isFetched && !force && !params.page && !params.search) return
+    if (state.isFetched && !force && !params.page && !params.search) {
+      return
+    }
 
     state.loading = true
     state.error = null
@@ -42,9 +46,11 @@ export function createEntityStore<T>(endpoint: string) {
       const requestParams = {
         page: state.pagination.page,
         page_size: state.pagination.pageSize,
-        ...params
+        ...params,
       }
-      Object.keys(requestParams).forEach(k => requestParams[k] == null && delete requestParams[k])
+      for (const k of Object.keys(requestParams)) {
+        requestParams[k] == null && delete requestParams[k]
+      }
 
       const response = await api.get<PaginatedResponse<T>>(endpoint, { params: requestParams })
 
@@ -54,8 +60,8 @@ export function createEntityStore<T>(endpoint: string) {
       state.pagination.previous = response.data.previous
       state.pagination.page = requestParams.page || 1
       state.isFetched = true
-    } catch (err: any) {
-      state.error = err.response?.data?.detail || 'Ошибка загрузки данных'
+    } catch (error: any) {
+      state.error = error.response?.data?.detail || 'Ошибка загрузки данных'
     } finally {
       state.loading = false
     }
@@ -69,7 +75,9 @@ export function createEntityStore<T>(endpoint: string) {
   }
 
   const goToPage = (page: number) => {
-    if (page < 1 || page > Math.ceil(state.pagination.count / state.pagination.pageSize)) return
+    if (page < 1 || page > Math.ceil(state.pagination.count / state.pagination.pageSize)) {
+      return
+    }
     state.pagination.page = page
     state.isFetched = false
     fetch()
@@ -77,12 +85,16 @@ export function createEntityStore<T>(endpoint: string) {
 
   const next = () => {
     const nextPage = extractPage(state.pagination.next)
-    if (nextPage) goToPage(nextPage)
+    if (nextPage) {
+      goToPage(nextPage)
+    }
   }
 
   const prev = () => {
     const prevPage = extractPage(state.pagination.previous)
-    if (prevPage) goToPage(prevPage)
+    if (prevPage) {
+      goToPage(prevPage)
+    }
   }
 
   const reset = () => {
