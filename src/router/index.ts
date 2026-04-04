@@ -19,7 +19,6 @@ const routes: RouteRecordRaw[] = [
       },
       { path: 'participants', name: 'participants', component: () => import('@/views/ParticipantsView.vue'), meta: { title: 'Участники обучения' } },
       { path: 'groups', name: 'groups', component: () => import('@/views/GroupsView.vue'), meta: { title: 'Учебные группы' } },
-      { path: 'groups/:id', name: 'group-detail', component: () => import('@/views/GroupDetailView.vue'), meta: { title: 'Карточка группы' } },
       { path: 'specifications', name: 'specifications', component: () => import('@/views/SpecificationsView.vue'), meta: { title: 'Спецификации' } },
       { path: 'companies', name: 'companies', component: () => import('@/views/CompaniesView.vue'), meta: { title: 'Компании' } },
     ],
