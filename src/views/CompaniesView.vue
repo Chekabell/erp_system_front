@@ -34,9 +34,6 @@
         <v-card hover elevation="2" class="rounded-lg overflow-hidden company-card cursor-pointer" @click="openAnalytics(company)">
           <div class="pa-4 bg-surface-variant">
             <div class="d-flex align-center ga-3">
-              <v-avatar :color="getAvatarColor(company.code)" size="48" class="text-white text-h5 font-weight-bold">
-                {{ company.code.toUpperCase() }}
-              </v-avatar>
               <div class="overflow-hidden">
                 <div class="text-h6 font-weight-medium text-truncate">{{ company.name }}</div>
                 <div class="text-caption text-medium-emphasis">Код: {{ company.code }}</div>
@@ -90,30 +87,26 @@
         <v-card-text class="pa-5">
           <v-alert type="info" variant="tonal" class="mb-4">
             <template v-slot:title>📊 Данные аналитики</template>
-            <div class="text-body-2 text-medium-emphasis mt-1">
-              Базовая модель API возвращает список спецификаций.
-            </div>
+            <v-table density="comfortable" class="elevation-0 border-thin rounded-lg">
+              <thead>
+                <tr>
+                  <th class="text-uppercase text-caption">Спецификация</th>
+                  <th class="text-uppercase text-caption text-right">Дата</th>
+                  <th class="text-uppercase text-caption text-right">Номер</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="spec in selectedCompany.specifications" :key="spec.id">
+                  <td class="font-weight-medium">Спецификация #{{ spec.id }}</td>
+                  <td class="text-right">{{ formatDate(spec.date) }}</td>
+                  <td class="text-right">{{ spec.number }}</td>
+                </tr>
+                <tr v-if="!selectedCompany.specifications?.length">
+                  <td colspan="3" class="text-center text-medium-emphasis py-4">Нет привязанных спецификаций</td>
+                </tr>
+              </tbody>
+            </v-table>
           </v-alert>
-
-          <v-table density="comfortable" class="elevation-0 border-thin rounded-lg">
-            <thead>
-              <tr>
-                <th class="text-uppercase text-caption">Спецификация</th>
-                <th class="text-uppercase text-caption text-right">Дата</th>
-                <th class="text-uppercase text-caption text-right">Номер</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="spec in selectedCompany.specifications" :key="spec.id">
-                <td class="font-weight-medium">Спецификация #{{ spec.id }}</td>
-                <td class="text-right">{{ formatDate(spec.date) }}</td>
-                <td class="text-right">{{ spec.number }}</td>
-              </tr>
-              <tr v-if="!selectedCompany.specifications?.length">
-                <td colspan="3" class="text-center text-medium-emphasis py-4">Нет привязанных спецификаций</td>
-              </tr>
-            </tbody>
-          </v-table>
         </v-card-text>
 
         <v-divider></v-divider>
