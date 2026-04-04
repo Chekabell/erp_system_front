@@ -1,5 +1,5 @@
 <template>
-  <v-container fluid class="pa-6">
+  <v-container class="pa-6" fluid>
     <v-card class="mb-6 pa-4 rounded-lg" elevation="2">
       <div class="d-flex flex-wrap align-center justify-space-between ga-4">
         <div>
@@ -9,11 +9,11 @@
         <div class="d-flex ga-3" style="max-width: 500px; flex: 1;">
           <v-text-field
             v-model="search"
-            prepend-inner-icon="mdi-magnify"
-            label="Поиск по названию или коду..."
             density="compact"
-            variant="solo"
             hide-details
+            label="Поиск по названию или коду..."
+            prepend-inner-icon="mdi-magnify"
+            variant="solo"
             @keyup.enter="handleSearch"
           />
           <v-btn color="primary" :loading="companiesStore.state.loading" @click="handleSearch">Найти</v-btn>
@@ -23,15 +23,22 @@
 
     <!-- Лоадер -->
     <div v-if="companiesStore.state.loading && !companiesStore.state.isFetched" class="d-flex justify-center mt-8">
-      <v-progress-circular indeterminate color="primary" size="64" />
+      <v-progress-circular color="primary" indeterminate size="64" />
     </div>
-    <v-alert v-else-if="companiesStore.state.error" type="error" variant="tonal" class="mt-4">{{ companiesStore.state.error }}</v-alert>
+    <v-alert v-else-if="companiesStore.state.error" class="mt-4" type="error" variant="tonal">{{ companiesStore.state.error }}</v-alert>
 
     <!-- Сетка -->
     <v-row v-else dense>
-      <v-col v-for="company in companiesStore.state.items" :key="company.id" cols="12" sm="6" lg="4" xl="3">
+      <v-col
+        v-for="company in companiesStore.state.items"
+        :key="company.id"
+        cols="12"
+        lg="4"
+        sm="6"
+        xl="3"
+      >
         <!-- Добавил cursor-pointer явно -->
-        <v-card hover elevation="2" class="rounded-lg overflow-hidden company-card cursor-pointer" @click="openAnalytics(company)">
+        <v-card class="rounded-lg overflow-hidden company-card cursor-pointer" elevation="2" hover @click="openAnalytics(company)">
           <div class="pa-4 bg-surface-variant">
             <div class="d-flex align-center ga-3">
               <div class="overflow-hidden">
@@ -41,13 +48,13 @@
             </div>
           </div>
           <!-- ... (Содержимое карточки) ... -->
-           <div class="pa-4">
+          <div class="pa-4">
             <div class="d-flex justify-space-between mb-3">
               <div class="text-center flex-1">
                 <div class="text-h5 font-weight-bold text-primary">--</div>
                 <div class="text-caption text-medium-emphasis">Сотрудников</div>
               </div>
-              <v-divider vertical></v-divider>
+              <v-divider vertical />
               <div class="text-center flex-1">
                 <div class="text-h5 font-weight-bold text-success">{{ company.specifications?.length || 0 }}</div>
                 <div class="text-caption text-medium-emphasis">Спецификаций</div>
@@ -55,19 +62,19 @@
             </div>
             <!-- ... -->
           </div>
-          <v-divider></v-divider>
+          <v-divider />
           <div class="pa-3 d-flex justify-end">
-            <v-btn variant="text" color="primary" size="small" append-icon="mdi-arrow-right">Аналитика</v-btn>
+            <v-btn append-icon="mdi-arrow-right" color="primary" size="small" variant="text">Аналитика</v-btn>
           </div>
         </v-card>
       </v-col>
     </v-row>
 
-    <v-empty-state v-if="!companiesStore.state.loading && companiesStore.state.items.length === 0" title="Компании не найдены" icon="mdi-office-building-remove" class="mt-8" />
+    <v-empty-state v-if="!companiesStore.state.loading && companiesStore.state.items.length === 0" class="mt-8" icon="mdi-office-building-remove" title="Компании не найдены" />
 
     <!-- Пагинация -->
-    <div class="d-flex justify-center mt-6" v-if="totalPages > 1">
-      <v-pagination :model-value="companiesStore.state.pagination.page" :length="totalPages" @update:model-value="companiesStore.goToPage" />
+    <div v-if="totalPages > 1" class="d-flex justify-center mt-6">
+      <v-pagination :length="totalPages" :model-value="companiesStore.state.pagination.page" @update:model-value="companiesStore.goToPage" />
     </div>
 
     <!--
@@ -75,19 +82,19 @@
     -->
     <v-dialog v-model="dialog" max-width="850" scrollable>
       <v-card v-if="selectedCompany" class="rounded-lg" prepend-icon="mdi-chart-box-outline">
-        <template v-slot:title>
+        <template #title>
           <span class="text-h5 font-weight-bold">Аналитика: {{ selectedCompany.name }}</span>
         </template>
-        <template v-slot:subtitle>
+        <template #subtitle>
           Код: <v-chip size="x-small">{{ selectedCompany.code }}</v-chip> | ID: {{ selectedCompany.id }}
         </template>
 
-        <v-divider class="my-2"></v-divider>
+        <v-divider class="my-2" />
 
         <v-card-text class="pa-5">
-          <v-alert type="info" variant="tonal" class="mb-4">
-            <template v-slot:title>📊 Данные аналитики</template>
-            <v-table density="comfortable" class="elevation-0 border-thin rounded-lg">
+          <v-alert class="mb-4" type="info" variant="tonal">
+            <template #title>📊 Данные аналитики</template>
+            <v-table class="elevation-0 border-thin rounded-lg" density="comfortable">
               <thead>
                 <tr>
                   <th class="text-uppercase text-caption">Спецификация</th>
@@ -102,16 +109,16 @@
                   <td class="text-right">{{ spec.number }}</td>
                 </tr>
                 <tr v-if="!selectedCompany.specifications?.length">
-                  <td colspan="3" class="text-center text-medium-emphasis py-4">Нет привязанных спецификаций</td>
+                  <td class="text-center text-medium-emphasis py-4" colspan="3">Нет привязанных спецификаций</td>
                 </tr>
               </tbody>
             </v-table>
           </v-alert>
         </v-card-text>
 
-        <v-divider></v-divider>
+        <v-divider />
         <v-card-actions class="pa-4">
-          <v-spacer></v-spacer>
+          <v-spacer />
           <v-btn variant="text" @click="dialog = false">Закрыть</v-btn>
         </v-card-actions>
       </v-card>
@@ -120,9 +127,9 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, onMounted } from 'vue'
-  import { companiesStore } from '@/stores/companiesStore'
   import type { Company } from '@/types/api'
+  import { computed, onMounted, ref } from 'vue'
+  import { companiesStore } from '@/stores/companiesStore'
 
   const search = ref('')
   const dialog = ref(false)
@@ -130,24 +137,24 @@
 
   const totalPages = computed(() => Math.ceil(companiesStore.state.pagination.count / companiesStore.state.pagination.pageSize) || 1)
 
-  const handleSearch = () => {
+  function handleSearch () {
     companiesStore.reset()
     companiesStore.fetch({ search: search.value || undefined })
   }
 
-  const openAnalytics = (company: Company) => {
+  function openAnalytics (company: Company) {
     selectedCompany.value = company
     dialog.value = true
   }
 
-  const getAvatarColor = (code: string): string => {
+  function getAvatarColor (code: string): string {
     const colors = ['primary', 'success', 'warning', 'error', 'info', 'purple', 'teal', 'indigo']
     let hash = 0
     for (let i = 0; i < code.length; i++) hash = code.charCodeAt(i) + ((hash << 5) - hash)
     return colors[Math.abs(hash) % colors.length]
   }
 
-  const formatDate = (dateStr: string): string => {
+  function formatDate (dateStr: string): string {
     if (!dateStr) return '--'
     const [year, month, day] = dateStr.split('-')
     return `${day}.${month}.${year}`

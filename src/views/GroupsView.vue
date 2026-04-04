@@ -1,5 +1,5 @@
 <template>
-  <v-container fluid class="pa-6">
+  <v-container class="pa-6" fluid>
     <!-- Header -->
     <v-card class="mb-6 pa-4 rounded-lg" elevation="2">
       <div class="d-flex flex-wrap align-center justify-space-between ga-4">
@@ -10,15 +10,15 @@
         <div class="d-flex ga-3">
           <v-text-field
             v-model="search"
-            prepend-inner-icon="mdi-magnify"
-            label="Поиск по курсу..."
             density="compact"
-            variant="solo"
             hide-details
+            label="Поиск по курсу..."
+            prepend-inner-icon="mdi-magnify"
             style="max-width: 300px;"
+            variant="solo"
             @keyup.enter="handleSearch"
           />
-          <v-btn color="primary" prepend-icon="mdi-plus" :loading="groupsStore.state.loading" @click="openCreateModal">
+          <v-btn color="primary" :loading="groupsStore.state.loading" prepend-icon="mdi-plus" @click="openCreateModal">
             Создать группу
           </v-btn>
         </div>
@@ -31,34 +31,34 @@
         <v-col cols="12" sm="4">
           <v-autocomplete
             v-model="filters.course"
-            :items="coursesStore.state.items"
+            clearable
+            density="compact"
             item-title="title"
             item-value="id"
+            :items="coursesStore.state.items"
             label="Курс"
-            density="compact"
-            clearable
             @update:model-value="applyFilters"
           />
         </v-col>
         <v-col cols="12" sm="4">
           <v-select
             v-model="filters.status"
+            clearable
+            density="compact"
             :items="statusOptions"
             label="Статус"
-            density="compact"
-            clearable
             @update:model-value="applyFilters"
           />
         </v-col>
         <v-col cols="12" sm="4">
           <v-autocomplete
             v-model="filters.specification"
-            :items="specificationsStore.state.items"
+            clearable
+            density="compact"
             item-title="number"
             item-value="id"
+            :items="specificationsStore.state.items"
             label="Спецификация"
-            density="compact"
-            clearable
             @update:model-value="applyFilters"
           />
         </v-col>
@@ -67,85 +67,109 @@
 
     <!-- Loading / Error -->
     <div v-if="groupsStore.state.loading && !groupsStore.state.isFetched" class="d-flex justify-center mt-8">
-      <v-progress-circular indeterminate color="primary" size="64" />
+      <v-progress-circular color="primary" indeterminate size="64" />
     </div>
-    <v-alert v-else-if="groupsStore.state.error" type="error" variant="tonal" class="mt-4">{{ groupsStore.state.error }}</v-alert>
+    <v-alert v-else-if="groupsStore.state.error" class="mt-4" type="error" variant="tonal">{{ groupsStore.state.error }}</v-alert>
 
     <!-- Table -->
-    <v-card v-else elevation="2" class="rounded-lg overflow-hidden">
+    <v-card v-else class="rounded-lg overflow-hidden" elevation="2">
       <v-data-table
-        :headers="headers"
-        :items="groupsStore.state.items"
         class="elevation-0"
-        hover
+        :headers="headers"
         hide-default-footer
+        hover
+        :items="groupsStore.state.items"
         no-data-text="Группы не найдены"
       >
         <!-- Course -->
-        <template v-slot:item.course="{ item }">
+        <template #item.course="{ item }">
           <div class="font-weight-medium">{{ item.course.title }}</div>
           <div class="text-caption text-medium-emphasis">{{ item.course.duration_days }} дн.</div>
         </template>
 
         <!-- Period -->
-        <template v-slot:item.period="{ item }">
+        <template #item.period="{ item }">
           <div>{{ formatDate(item.start_date) }}</div>
           <div class="text-caption text-medium-emphasis">– {{ formatDate(item.end_date) }}</div>
         </template>
 
         <!-- Participants -->
-        <template v-slot:item.employees_count="{ item }">
-          <v-chip size="small" variant="tonal" color="primary">{{ item.employees_count }}</v-chip>
+        <template #item.employees_count="{ item }">
+          <v-chip color="primary" size="small" variant="tonal">{{ item.employees_count }}</v-chip>
         </template>
 
         <!-- Progress -->
-        <template v-slot:item.average_progress="{ item }">
+        <template #item.average_progress="{ item }">
           <div class="d-flex align-center ga-2">
-            <v-progress-linear :model-value="item.average_progress" color="info" height="6" rounded style="width: 80px;"></v-progress-linear>
+            <v-progress-linear
+              color="info"
+              height="6"
+              :model-value="item.average_progress"
+              rounded
+              style="width: 80px;"
+            />
             <span class="text-caption">{{ item.average_progress }}%</span>
           </div>
         </template>
 
         <!-- Status -->
-        <template v-slot:item.status="{ item }">
-          <v-chip size="small" :color="getStatusColor(item.status)" variant="tonal">
+        <template #item.status="{ item }">
+          <v-chip :color="getStatusColor(item.status)" size="small" variant="tonal">
             {{ getStatusLabel(item.status) }}
           </v-chip>
         </template>
 
         <!-- Cost -->
-        <template v-slot:item.total_cost="{ item }">
+        <template #item.total_cost="{ item }">
           <div class="text-right font-weight-bold">{{ formatCurrency(item.total_cost) }}</div>
         </template>
 
         <!-- Actions -->
-        <template v-slot:item.actions="{ item }">
-          <v-btn icon="mdi-pencil" variant="text" color="primary" size="small" @click="openEditModal(item)" />
-          <v-btn icon="mdi-eye" variant="text" color="secondary" size="small" @click="openDetailModal(item)" />
-          <v-btn icon="mdi-delete" variant="text" color="error" size="small" @click="confirmDelete(item)" />
+        <template #item.actions="{ item }">
+          <v-btn
+            color="primary"
+            icon="mdi-pencil"
+            size="small"
+            variant="text"
+            @click="openEditModal(item)"
+          />
+          <v-btn
+            color="secondary"
+            icon="mdi-eye"
+            size="small"
+            variant="text"
+            @click="openDetailModal(item)"
+          />
+          <v-btn
+            color="error"
+            icon="mdi-delete"
+            size="small"
+            variant="text"
+            @click="confirmDelete(item)"
+          />
         </template>
       </v-data-table>
 
       <!-- Footer: Page Size & Pagination -->
-      <v-divider></v-divider>
+      <v-divider />
       <div class="d-flex justify-space-between align-center pa-3 bg-surface-variant">
         <div class="d-flex align-center ga-2">
           <span class="text-caption text-medium-emphasis">Показывать по:</span>
           <v-select
             v-model="groupsStore.state.pagination.pageSize"
-            :items="[10, 20, 50, 100]"
             density="compact"
-            variant="outlined"
             hide-details
+            :items="[10, 20, 50, 100]"
             style="width: 80px;"
+            variant="outlined"
             @update:model-value="groupsStore.changePageSize"
-          ></v-select>
+          />
           <span class="text-caption text-medium-emphasis">из {{ groupsStore.state.pagination.count }}</span>
         </div>
         <v-pagination
           v-if="totalPages > 1"
-          :model-value="groupsStore.state.pagination.page"
           :length="totalPages"
+          :model-value="groupsStore.state.pagination.page"
           size="small"
           @update:model-value="groupsStore.goToPage"
         />
@@ -161,34 +185,34 @@
         <v-card-subtitle class="px-4 pb-2">
           {{ isEditing ? `Группа #${formData.id}` : 'Заполните данные новой группы' }}
         </v-card-subtitle>
-        <v-divider class="my-2"></v-divider>
+        <v-divider class="my-2" />
 
         <v-card-text class="pa-4">
           <v-form v-model="formValid" @submit.prevent="saveGroup">
             <!-- Course -->
             <v-autocomplete
               v-model="formData.course_id"
-              :items="coursesStore.state.items"
+              density="compact"
+              :disabled="isEditing"
               item-title="title"
               item-value="id"
+              :items="coursesStore.state.items"
               label="Курс обучения *"
               :rules="[v => !!v || 'Выберите курс']"
-              density="compact"
               variant="outlined"
-              :disabled="isEditing"
               @update:model-value="onCourseChange"
             />
 
             <!-- Specification -->
             <v-autocomplete
               v-model="formData.specification_id"
-              :items="specificationsStore.state.items"
+              density="compact"
+              hint="Необязательно. Группа может быть не привязана к спецификации."
               item-title="number"
               item-value="id"
+              :items="specificationsStore.state.items"
               label="Спецификация"
-              density="compact"
               variant="outlined"
-              hint="Необязательно. Группа может быть не привязана к спецификации."
             />
 
             <!-- Dates -->
@@ -196,20 +220,20 @@
               <v-col cols="6">
                 <v-text-field
                   v-model="formData.start_date"
-                  label="Дата начала *"
-                  type="date"
-                  :rules="[v => !!v || 'Укажите дату']"
                   density="compact"
+                  label="Дата начала *"
+                  :rules="[v => !!v || 'Укажите дату']"
+                  type="date"
                   variant="outlined"
                 />
               </v-col>
               <v-col cols="6">
                 <v-text-field
                   v-model="formData.end_date"
-                  label="Дата окончания *"
-                  type="date"
-                  :rules="[v => !!v || 'Укажите дату']"
                   density="compact"
+                  label="Дата окончания *"
+                  :rules="[v => !!v || 'Укажите дату']"
+                  type="date"
                   variant="outlined"
                 />
               </v-col>
@@ -218,38 +242,38 @@
             <!-- Status -->
             <v-select
               v-model="formData.status"
+              density="compact"
               :items="statusOptions"
               label="Статус"
-              density="compact"
               variant="outlined"
             />
 
             <!-- Employees Multi-select -->
             <v-autocomplete
               v-model="selectedEmployeeIds"
-              :items="employeesStore.state.items"
-              item-title="full_name"
-              item-value="id"
-              label="Участники группы"
-              multiple
               chips
               closable-chips
               density="compact"
-              variant="outlined"
               hint="Выберите сотрудников из списка"
+              item-title="full_name"
+              item-value="id"
+              :items="employeesStore.state.items"
+              label="Участники группы"
+              multiple
+              variant="outlined"
             >
-              <template v-slot:item="{ props, item }">
+              <template #item="{ props, item }">
                 <v-list-item v-bind="props">
-                  <template v-slot:subtitle>
-                   {{ item.raw?.company?.name ?? '—' }} • {{ item.raw?.email ?? '—' }}
+                  <template #subtitle>
+                    {{ item.raw?.company?.name ?? '—' }} • {{ item.raw?.email ?? '—' }}
                   </template>
                 </v-list-item>
               </template>
             </v-autocomplete>
 
             <!-- Real-time Cost Calculation -->
-            <v-alert type="info" variant="tonal" class="mt-4">
-              <template v-slot:title>💰 Расчет стоимости</template>
+            <v-alert class="mt-4" type="info" variant="tonal">
+              <template #title>💰 Расчет стоимости</template>
               <div class="text-body-2">
                 <div>Цена за человека: <strong>{{ formatCurrency(coursePrice) }}</strong></div>
                 <div>Участников: <strong>{{ selectedEmployeeIds.length }}</strong></div>
@@ -259,9 +283,9 @@
           </v-form>
         </v-card-text>
 
-        <v-divider></v-divider>
+        <v-divider />
         <v-card-actions class="pa-4">
-          <v-spacer></v-spacer>
+          <v-spacer />
           <v-btn variant="text" @click="formDialog = false">Отмена</v-btn>
           <v-btn color="primary" :disabled="!formValid" @click="saveGroup">Сохранить</v-btn>
         </v-card-actions>
@@ -277,36 +301,36 @@
         </v-card-title>
         <v-card-subtitle class="px-4 pb-2">
           {{ formatDate(selectedGroup.start_date) }} – {{ formatDate(selectedGroup.end_date) }}
-          <v-chip size="small" :color="getStatusColor(selectedGroup.status)" class="ml-2">
+          <v-chip class="ml-2" :color="getStatusColor(selectedGroup.status)" size="small">
             {{ getStatusLabel(selectedGroup.status) }}
           </v-chip>
         </v-card-subtitle>
 
-        <v-divider class="my-2"></v-divider>
+        <v-divider class="my-2" />
 
         <v-card-text class="pa-4">
           <!-- Summary -->
-          <v-row dense class="mb-4">
+          <v-row class="mb-4" dense>
             <v-col cols="6" sm="3">
-              <v-sheet variant="tonal" color="primary" class="pa-3 rounded text-center">
+              <v-sheet class="pa-3 rounded text-center" color="primary" variant="tonal">
                 <div class="text-caption">Участников</div>
                 <div class="text-h5 font-weight-bold">{{ selectedGroup.employees_count }}</div>
               </v-sheet>
             </v-col>
             <v-col cols="6" sm="3">
-              <v-sheet variant="tonal" color="success" class="pa-3 rounded text-center">
+              <v-sheet class="pa-3 rounded text-center" color="success" variant="tonal">
                 <div class="text-caption">Прогресс</div>
                 <div class="text-h5 font-weight-bold">{{ selectedGroup.average_progress }}%</div>
               </v-sheet>
             </v-col>
             <v-col cols="6" sm="3">
-              <v-sheet variant="tonal" color="warning" class="pa-3 rounded text-center">
+              <v-sheet class="pa-3 rounded text-center" color="warning" variant="tonal">
                 <div class="text-caption">Цена за чел.</div>
                 <div class="text-h5 font-weight-bold">{{ formatCurrency(selectedGroup.price_at_creation) }}</div>
               </v-sheet>
             </v-col>
             <v-col cols="6" sm="3">
-              <v-sheet variant="tonal" color="info" class="pa-3 rounded text-center">
+              <v-sheet class="pa-3 rounded text-center" color="info" variant="tonal">
                 <div class="text-caption">Стоимость группы</div>
                 <div class="text-h5 font-weight-bold">{{ formatCurrency(selectedGroup.total_cost) }}</div>
               </v-sheet>
@@ -315,7 +339,7 @@
 
           <!-- Participants Table with Progress -->
           <h3 class="text-h6 font-weight-medium mb-3">Участники и прогресс</h3>
-          <v-table density="compact" class="elevation-0 border-thin rounded-lg">
+          <v-table class="elevation-0 border-thin rounded-lg" density="compact">
             <thead>
               <tr class="bg-surface-variant">
                 <th>Сотрудник</th>
@@ -332,21 +356,28 @@
                   <div class="d-flex align-center ga-2">
                     <v-slider
                       v-model="emp.progress_percent"
-                      :min="0" :max="100"
-                      thumb-label
                       hide-details
+                      :max="100"
+                      :min="0"
                       style="width: 100px;"
+                      thumb-label
                       @end="updateEmployeeProgress(emp.id, emp.progress_percent)"
                     />
                     <span class="text-caption font-weight-bold">{{ emp.progress_percent }}%</span>
                   </div>
                 </td>
                 <td class="text-center">
-                  <v-btn icon="mdi-close" variant="text" color="error" size="x-small" @click="removeEmployeeFromGroup(emp.id)" />
+                  <v-btn
+                    color="error"
+                    icon="mdi-close"
+                    size="x-small"
+                    variant="text"
+                    @click="removeEmployeeFromGroup(emp.id)"
+                  />
                 </td>
               </tr>
               <tr v-if="groupEmployees.length === 0">
-                <td colspan="4" class="text-center text-medium-emphasis py-4">Нет участников в группе</td>
+                <td class="text-center text-medium-emphasis py-4" colspan="4">Нет участников в группе</td>
               </tr>
             </tbody>
           </v-table>
@@ -355,24 +386,24 @@
           <div class="mt-4 d-flex ga-2">
             <v-autocomplete
               v-model="newEmployeeId"
-              :items="availableEmployees"
+              density="compact"
+              hide-details
               item-title="full_name"
               item-value="id"
+              :items="availableEmployees"
               label="Добавить участника"
-              density="compact"
-              variant="outlined"
-              hide-details
               style="flex: 1;"
+              variant="outlined"
             />
-            <v-btn color="primary" prepend-icon="mdi-plus" :disabled="!newEmployeeId" @click="addEmployeeToGroup">
+            <v-btn color="primary" :disabled="!newEmployeeId" prepend-icon="mdi-plus" @click="addEmployeeToGroup">
               Добавить
             </v-btn>
           </div>
         </v-card-text>
 
-        <v-divider></v-divider>
+        <v-divider />
         <v-card-actions class="pa-4">
-          <v-spacer></v-spacer>
+          <v-spacer />
           <v-btn variant="text" @click="detailDialog = false">Закрыть</v-btn>
         </v-card-actions>
       </v-card>
@@ -389,7 +420,7 @@
           </div>
         </v-card-text>
         <v-card-actions>
-          <v-spacer></v-spacer>
+          <v-spacer />
           <v-btn variant="text" @click="deleteDialog = false">Отмена</v-btn>
           <v-btn color="error" @click="confirmDeleteAction">Удалить</v-btn>
         </v-card-actions>
@@ -399,24 +430,25 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, onMounted, watch } from 'vue'
-  import { groupsStore } from '@/stores/groupsStore'
+  import type { GroupRequest, GroupResponse, SimpleEmployeeResponse } from '@/types/api'
+  import { computed, onMounted, ref, watch } from 'vue'
   import { coursesStore } from '@/stores/coursesStore'
   import { employeesStore } from '@/stores/employeesStore'
-  import { specificationsStore } from '@/stores/specificationsStore'
   import { useGroupEmployees } from '@/stores/groupEmployeesStore'
-  import type { GroupResponse, GroupRequest, SimpleEmployeeResponse } from '@/types/api'
+  import { groupsStore } from '@/stores/groupsStore'
+  import { specificationsStore } from '@/stores/specificationsStore'
+import api from '@/api/client'
 
   // Search & Filters
   const search = ref('')
   const filters = ref({ course: null as number | null, status: null as string | null, specification: null as number | null })
   const totalPages = computed(() => Math.ceil(groupsStore.state.pagination.count / groupsStore.state.pagination.pageSize) || 1)
 
-  const handleSearch = () => {
+  function handleSearch () {
     groupsStore.reset()
     groupsStore.fetch({ search: search.value || undefined, ...filters.value })
   }
-  const applyFilters = () => {
+  function applyFilters () {
     groupsStore.reset()
     groupsStore.fetch({ ...filters.value })
   }
@@ -429,20 +461,20 @@
     { title: 'Прогресс', key: 'average_progress', width: 150 },
     { title: 'Статус', key: 'status', width: 120 },
     { title: 'Стоимость', key: 'total_cost', align: 'end' },
-    { title: '', key: 'actions', sortable: false, width: 120, align: 'end' }
+    { title: '', key: 'actions', sortable: false, width: 120, align: 'end' },
   ]
 
   // Status helpers
   const statusOptions = [
     { title: 'Планируется', value: 'planned' },
     { title: 'В процессе', value: 'in_progress' },
-    { title: 'Завершено', value: 'completed' }
+    { title: 'Завершено', value: 'completed' },
   ]
-  const getStatusColor = (status?: string) => {
+  function getStatusColor (status?: string) {
     const map: Record<string, string> = { planned: 'blue', in_progress: 'orange', completed: 'green' }
     return map[status || 'planned'] || 'grey'
   }
-  const getStatusLabel = (status?: string) => {
+  function getStatusLabel (status?: string) {
     const map: Record<string, string> = { planned: 'Планируется', in_progress: 'В процессе', completed: 'Завершено' }
     return map[status || 'planned'] || 'Неизвестно'
   }
@@ -461,7 +493,7 @@
     start_date: '',
     end_date: '',
     status: 'planned',
-    total_cost: '0'
+    total_cost: '0',
   })
 
   const selectedEmployeeIds = ref<number[]>([])
@@ -478,31 +510,31 @@
 
   // Computed
   const availableEmployees = computed(() => {
-    const assignedIds = groupEmployees.value.map(e => e.id)
-    return employeesStore.state.items.filter(e => !assignedIds.includes(e.id))
+    const assignedIds = new Set(groupEmployees.value.map(e => e.id))
+    return employeesStore.state.items.filter(e => !assignedIds.has(e.id))
   })
 
   // Utils
-  const formatDate = (dateStr: string): string => {
+  function formatDate (dateStr: string): string {
     if (!dateStr) return '--'
     const [y, m, d] = dateStr.split('-')
     return `${d}.${m}.${y}`
   }
-  const formatCurrency = (value: string | number): string => {
-    const num = typeof value === 'string' ? parseFloat(value) : value
+  function formatCurrency (value: string | number): string {
+    const num = typeof value === 'string' ? Number.parseFloat(value) : value
     return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 0 }).format(num)
   }
 
   // Form Handlers
-  const onCourseChange = (courseId: number) => {
+  function onCourseChange (courseId: number) {
     const course = coursesStore.state.items.find(c => c.id === courseId)
     if (course) {
-      coursePrice.value = parseFloat(course.base_price)
+      coursePrice.value = Number.parseFloat(course.base_price)
       formData.value.total_cost = (coursePrice.value * selectedEmployeeIds.value.length).toFixed(2)
     }
   }
 
-  const openCreateModal = () => {
+  function openCreateModal () {
     isEditing.value = false
     formData.value = { course_id: 0, specification_id: 0, start_date: '', end_date: '', status: 'planned', total_cost: '0' }
     selectedEmployeeIds.value = []
@@ -510,7 +542,7 @@
     formDialog.value = true
   }
 
-  const openEditModal = (group: GroupResponse) => {
+  function openEditModal (group: GroupResponse) {
     isEditing.value = true
     formData.value = {
       id: group.id,
@@ -519,15 +551,15 @@
       start_date: group.start_date,
       end_date: group.end_date,
       status: group.status || 'planned',
-      total_cost: group.total_cost
+      total_cost: group.total_cost,
     }
     // Load assigned employees (would need separate API call in real app)
     selectedEmployeeIds.value = [] // Placeholder
-    coursePrice.value = parseFloat(group.course.base_price)
+    coursePrice.value = Number.parseFloat(group.course.base_price)
     formDialog.value = true
   }
 
-  const saveGroup = async () => {
+  async function saveGroup () {
     if (!formValid.value) return
     formLoading.value = true
     try {
@@ -537,24 +569,20 @@
         start_date: formData.value.start_date,
         end_date: formData.value.end_date,
         status: formData.value.status,
-        total_cost: calculatedCost.value.toFixed(2)
+        total_cost: calculatedCost.value.toFixed(2),
       }
-      if (isEditing.value && formData.value.id) {
-        await groupsStore.update(formData.value.id, payload)
-      } else {
-        await groupsStore.create(payload)
-      }
+      await (isEditing.value && formData.value.id ? groupsStore.update(formData.value.id, payload) : groupsStore.create(payload))
       formDialog.value = false
       groupsStore.fetch() // Refresh list
-    } catch (err) {
-      console.error('Ошибка сохранения группы:', err)
+    } catch (error) {
+      console.error('Ошибка сохранения группы:', error)
     } finally {
       formLoading.value = false
     }
   }
 
   // Detail Handlers
-  const openDetailModal = async (group: GroupResponse) => {
+  async function openDetailModal (group: GroupResponse) {
     selectedGroup.value = group
     detailDialog.value = true
     // Load employees for this group via specialized store
@@ -567,19 +595,19 @@
     }, 100)
   }
 
-  const updateEmployeeProgress = async (employeeId: number, progress: number) => {
+  async function updateEmployeeProgress (employeeId: number, progress: number) {
     if (!selectedGroup.value) return
     try {
       await api.patch(`/api/groups/${selectedGroup.value.id}/employee/${employeeId}/`, { progress_percent: progress })
       // Refresh local state
       const emp = groupEmployees.value.find(e => e.id === employeeId)
       if (emp) emp.progress_percent = progress
-    } catch (err) {
-      console.error('Ошибка обновления прогресса:', err)
+    } catch (error) {
+      console.error('Ошибка обновления прогресса:', error)
     }
   }
 
-  const addEmployeeToGroup = async () => {
+  async function addEmployeeToGroup () {
     if (!selectedGroup.value || !newEmployeeId.value) return
     try {
       await api.post(`/api/groups/${selectedGroup.value.id}/employee/`, { employee_ids: [newEmployeeId.value] })
@@ -587,34 +615,34 @@
       // Refresh employees list
       const { fetch } = useGroupEmployees(selectedGroup.value.id)
       fetch()
-    } catch (err) {
-      console.error('Ошибка добавления участника:', err)
+    } catch (error) {
+      console.error('Ошибка добавления участника:', error)
     }
   }
 
-  const removeEmployeeFromGroup = async (employeeId: number) => {
+  async function removeEmployeeFromGroup (employeeId: number) {
     if (!selectedGroup.value) return
     try {
       await api.delete(`/api/groups/${selectedGroup.value.id}/employee/${employeeId}/`)
       groupEmployees.value = groupEmployees.value.filter(e => e.id !== employeeId)
-    } catch (err) {
-      console.error('Ошибка удаления участника:', err)
+    } catch (error) {
+      console.error('Ошибка удаления участника:', error)
     }
   }
 
   // Delete Handler
-  const confirmDelete = (group: GroupResponse) => {
+  function confirmDelete (group: GroupResponse) {
     groupToDelete.value = group
     deleteDialog.value = true
   }
-  const confirmDeleteAction = async () => {
+  async function confirmDeleteAction () {
     if (!groupToDelete.value) return
     try {
       await groupsStore.remove(groupToDelete.value.id)
       deleteDialog.value = false
       groupsStore.fetch()
-    } catch (err) {
-      console.error('Ошибка удаления:', err)
+    } catch (error) {
+      console.error('Ошибка удаления:', error)
     }
   }
 

@@ -1,7 +1,6 @@
 <template>
-  <v-card class="gantt-container" elevation="2">
+  <v-card class="gantt-container w-100" elevation="2">
     <v-card-title class="d-flex justify-space-between align-center flex-wrap">
-      <span class="text-h6">📊 План обучения групп</span>
       <div class="d-flex gap-2 align-center">
         <v-btn-toggle v-model="scalePreset" density="compact" variant="outlined">
           <v-btn :value="30">Неделя</v-btn>
@@ -42,13 +41,13 @@
           <p><strong>📅 Даты:</strong> {{ formatDate(selectedGroup.start_date) }} – {{ formatDate(selectedGroup.end_date) }}</p>
           <p><strong>📈 Прогресс курса:</strong> {{ selectedGroup.average_progress }}%</p>
           <v-divider class="my-2" />
-          <!-- <p><strong>👥 Состав группы ({{ selectedGroup.members?.length || 0 }} чел.):</strong></p>
+          <p><strong>👥 Состав группы ({{ selectedGroup.members?.length || 0 }} чел.):</strong></p>
           <v-chip v-for="member in selectedGroup.members" :key="member.id" class="ma-1" size="small">
-            {{ member.name }}
-          </v-chip> -->
-          <!-- <v-alert v-if="groupConflicts[selectedGroup.id]" class="mt-3" density="compact" type="warning">
+            {{ member.full_name }}
+          </v-chip>
+          <v-alert v-if="groupConflicts[selectedGroup.id]" class="mt-3" density="compact" type="warning">
             ⚠️ Конфликт: у сотрудников пересекаются занятия с другими группами
-          </v-alert> -->
+          </v-alert>
         </v-card-text>
         <v-card-actions>
           <v-spacer />
@@ -57,7 +56,6 @@
       </v-card>
     </v-dialog>
 
-    <!-- Уведомления о конфликтах -->
     <v-snackbar
       v-model="showConflictSnackbar"
       color="warning"
@@ -86,13 +84,10 @@
   const canvasRef = ref<HTMLCanvasElement | null>(null)
   const wrapperRef = ref<HTMLDivElement | null>(null)
 
-  // Масштаб (пикселей на день)
   const pixelsPerDay = ref(30)
-  // Смещения: offsetX в днях, offsetY в пикселях
   const offsetX = ref(0)
   const offsetY = ref(0)
 
-  // Пресет для кнопок
   const scalePreset = computed({
     get: () => {
       if (Math.abs(pixelsPerDay.value - 30) < 0.1) return 30
@@ -105,8 +100,8 @@
     },
   })
 
-  // Drag state
-  const dragStart = ref({ x: 0, y: 0, offsetX: 0, offsetY: 0, isDragging: false })
+  // Drag state с дополнительным флагом для определения перетаскивания
+  const dragStart = ref({ x: 0, y: 0, offsetX: 0, offsetY: 0, isDragging: false, moved: false })
 
   const detailsDialog = ref(false)
   const selectedGroup = ref<SimpleGroupResponse | null>(null)
@@ -147,11 +142,10 @@
 
   const canvasWidth = computed(() => totalDays.value * pixelsPerDay.value + leftPanelWidth)
   const canvasHeight = computed(() => normalizedGroups.value.length * rowHeight + 60)
-  // Размеры видимой области
+
   const viewportWidth = ref(0)
   const viewportHeight = ref(0)
 
-  // Максимальные смещения
   const maxOffsetX = computed(() => {
     const fullWidth = canvasWidth.value
     if (fullWidth <= viewportWidth.value) return 0
@@ -198,6 +192,16 @@
     return index * rowHeight + 40 - offsetY.value
   }
 
+  // Вспомогательная функция для обрезки текста с многоточием
+  function truncateText (ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string {
+    if (ctx.measureText(text).width <= maxWidth) return text
+    let truncated = text
+    while (ctx.measureText(truncated + '…').width > maxWidth && truncated.length > 0) {
+      truncated = truncated.slice(0, -1)
+    }
+    return truncated + '…'
+  }
+
   // ---------- Отрисовка ----------
   function draw () {
     const canvas = canvasRef.value
@@ -215,11 +219,18 @@
     drawTimeScale(ctx)
     drawGrid(ctx)
 
+    // ---- КЛИП: полосы не должны залезать на шкалу (выше 40px) ----
+    ctx.save()
+    ctx.beginPath()
+    ctx.rect(leftPanelWidth, 40, canvasWidth.value - leftPanelWidth, canvasHeight.value - 40)
+    ctx.clip()
+
     // Полосы групп
     for (const [idx, group] of normalizedGroups.value.entries()) {
       const y = groupY(idx)
       const startX = groupStartX(group)
       const width = groupWidth(group)
+      // Проверка видимости (опционально, clip уже обрежет)
       if (y + rowHeight < 0 || y > canvasHeight.value) continue
       if (startX + width < 0 || startX > canvasWidth.value) continue
 
@@ -234,40 +245,53 @@
         ctx.fillRect(startX, y + 5, Math.min(progWidth, width), rowHeight - 10)
       }
 
+      // Название внутри полосы
       ctx.font = '12px "Segoe UI"'
       ctx.fillStyle = '#0d47a1'
-      const text = group.course_title
-      const textWidth = ctx.measureText(text).width
+      let text = group.course_title
+      let textWidth = ctx.measureText(text).width
       if (textWidth < width - 10) {
         ctx.fillText(text, startX + 5, y + rowHeight / 2 + 3)
       } else {
-        ctx.fillText(text, startX + width + 5, y + rowHeight / 2 + 3)
+        const maxRightWidth = canvasWidth.value - (startX + width + 5)
+        const rightText = truncateText(ctx, text, Math.min(200, maxRightWidth))
+        ctx.fillText(rightText, startX + width + 5, y + rowHeight / 2 + 3)
       }
 
+      // Процент (округлённый)
       ctx.fillStyle = '#333'
       ctx.font = '10px "Segoe UI"'
-      ctx.fillText(`${group.average_progress}%`, startX + width - 25, y + rowHeight / 2 + 3)
+      const percentText = `${Math.round(group.average_progress)}%`
+      const percentWidth = ctx.measureText(percentText).width
+      let percentX = startX + width - 5 - percentWidth
+      if (percentX < startX + 5) percentX = startX + 5
+      ctx.fillText(percentText, percentX, y + rowHeight / 2 + 3)
 
-      // if (groupConflicts.value[group.id]) {
-      //   ctx.save()
-      //   ctx.globalAlpha = 0.3
-      //   ctx.fillStyle = '#ff9800'
-      //   ctx.fillRect(startX, y + 5, width, rowHeight - 10)
-      //   ctx.restore()
-      // }
+      if (groupConflicts.value[group.id]) {
+        ctx.save()
+        ctx.globalAlpha = 0.3
+        ctx.fillStyle = '#ff9800'
+        ctx.fillRect(startX, y + 5, width, rowHeight - 10)
+        ctx.restore()
+      }
     }
 
-    // Левая панель с названиями
+    ctx.restore() // снимаем clip
+
+    // Левая панель с названиями (рисуется поверх, без clip)
     ctx.fillStyle = '#f5f5f5'
     ctx.fillRect(0, 0, leftPanelWidth, canvas.height)
     ctx.strokeStyle = '#ddd'
     ctx.strokeRect(0, 0, leftPanelWidth, canvas.height)
+    ctx.font = '13px "Segoe UI"'
     for (const [idx, group] of normalizedGroups.value.entries()) {
       const y = groupY(idx)
       if (y + rowHeight < 0 || y > canvasHeight.value) continue
       ctx.fillStyle = '#333'
-      ctx.font = '13px "Segoe UI"'
-      ctx.fillText(group.course_title, 10, y + rowHeight / 2 + 3)
+      let title = group.course_title
+      const maxTitleWidth = leftPanelWidth - 20
+      title = truncateText(ctx, title, maxTitleWidth)
+      ctx.fillText(title, 10, y + rowHeight / 2 + 3)
     }
   }
 
@@ -335,23 +359,20 @@
     }
   }
 
-  // ---------- Обработка колесика (вертикаль, горизонталь, масштаб) ----------
+  // ---------- Обработка колесика ----------
   function handleWheel (event: WheelEvent) {
     event.preventDefault()
     if (event.ctrlKey) {
-      // Масштабирование
       const delta = event.deltaY > 0 ? 0.9 : 1.1
       let newPixels = pixelsPerDay.value * delta
       newPixels = Math.min(80, Math.max(3, newPixels))
       pixelsPerDay.value = newPixels
       clampOffsets()
     } else if (event.shiftKey) {
-      // Горизонтальная прокрутка
       const deltaX = event.deltaY > 0 ? 20 : -20
       offsetX.value += deltaX / pixelsPerDay.value
       clampOffsets()
     } else {
-      // Вертикальная прокрутка
       const deltaY = event.deltaY > 0 ? 20 : -20
       offsetY.value += deltaY
       clampOffsets()
@@ -359,7 +380,6 @@
     draw()
   }
 
-  // ---------- Панорамирование кнопками ----------
   function panHorizontal (direction: number) {
     offsetX.value += direction * 150 / pixelsPerDay.value
     clampOffsets()
@@ -380,7 +400,7 @@
     draw()
   }
 
-  // ---------- Drag ЛКМ (панорамирование во все стороны) ----------
+  // ---------- Drag ЛКМ (панорамирование) ----------
   function startDrag (event: MouseEvent) {
     dragStart.value = {
       x: event.clientX,
@@ -388,6 +408,7 @@
       offsetX: offsetX.value,
       offsetY: offsetY.value,
       isDragging: true,
+      moved: false, // FIX: сбрасываем флаг перемещения
     }
     document.body.style.userSelect = 'none'
   }
@@ -396,6 +417,10 @@
     if (!dragStart.value.isDragging) return
     const dx = event.clientX - dragStart.value.x
     const dy = event.clientY - dragStart.value.y
+    // FIX: если перемещение больше 5 пикселей, считаем что был drag
+    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+      dragStart.value.moved = true
+    }
     offsetX.value = dragStart.value.offsetX - dx / pixelsPerDay.value
     offsetY.value = dragStart.value.offsetY - dy
     clampOffsets()
@@ -405,38 +430,46 @@
   function endDrag () {
     dragStart.value.isDragging = false
     document.body.style.userSelect = ''
+    // FIX: не сбрасываем moved сразу, он будет проверен при клике
   }
 
   // ---------- Конфликты в расписании ----------
-  // const groupConflicts = computed(() => {
-  //   const conflictsMap: Record<number, boolean> = {}
-  //   if (props.groups.length === 0) return conflictsMap
-  //   const employeeGroups = new Map<number, Array<{ groupId: number, start: Date, end: Date }>>()
-  //   for (const group of props.groups) {
-  //     for (const emp of group.members) {
-  //       if (!employeeGroups.has(emp.id)) employeeGroups.set(emp.id, [])
-  //       employeeGroups.get(emp.id)!.push({ groupId: group.id, start: group.startDate, end: group.endDate })
-  //     }
-  //   }
-  //   for (const intervals of employeeGroups.values()) {
-  //     for (let i = 0; i < intervals.length; i++) {
-  //       for (let j = i + 1; j < intervals.length; j++) {
-  //         const a = intervals[i], b = intervals[j]
-  //         if (a.start < b.end && b.start < a.end) {
-  //           conflictsMap[a.groupId] = true
-  //           conflictsMap[b.groupId] = true
-  //         }
-  //       }
-  //     }
-  //   }
-  //   if (Object.keys(conflictsMap).length > 0 && !showConflictSnackbar.value) {
-  //     showConflictSnackbar.value = true
-  //   }
-  //   return conflictsMap
-  // })
+  const groupConflicts = computed(() => {
+    const conflictsMap: Record<number, boolean> = {}
+    if (props.groups.length === 0) return conflictsMap
+    const employeeGroups = new Map<number, Array<{ groupId: number, start: Date, end: Date }>>()
+    for (const group of props.groups) {
+      if (group.members != null)
+        for (const emp of group.members) {
+          if (!employeeGroups.has(emp.id)) employeeGroups.set(emp.id, [])
+          employeeGroups.get(emp.id)!.push({ groupId: group.id, start: group.start_date, end: group.end_date })
+        }
+    }
+    for (const intervals of employeeGroups.values()) {
+      for (let i = 0; i < intervals.length; i++) {
+        for (let j = i + 1; j < intervals.length; j++) {
+          const a = intervals[i], b = intervals[j]
+          if (a.start < b.end && b.start < a.end) {
+            conflictsMap[a.groupId] = true
+            conflictsMap[b.groupId] = true
+          }
+        }
+      }
+    }
+    if (Object.keys(conflictsMap).length > 0 && !showConflictSnackbar.value) {
+      showConflictSnackbar.value = true
+    }
+    return conflictsMap
+  })
 
-  // ---------- Клик по полосе для детализации ----------
+  // ---------- Клик по полосе для детализации (с проверкой на drag) ----------
   function handleCanvasClick (event: MouseEvent) {
+    // FIX: если было перетаскивание, не открываем диалог
+    if (dragStart.value.moved) {
+      dragStart.value.moved = false
+      return
+    }
+
     const canvas = canvasRef.value
     if (!canvas) return
     const rect = canvas.getBoundingClientRect()

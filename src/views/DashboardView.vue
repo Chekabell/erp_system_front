@@ -15,7 +15,7 @@
         <v-card class="pa-4 rounded-xl d-flex justify-start" height="100%" style="background-image: linear-gradient(to bottom, rgba(2, 136, 255, 0.6) 0%, rgba(1, 136, 255, 0.75) 38%, #1976D2 100%);" variant="tonal">
           <v-icon class="h-100 w-33"><people-icon /></v-icon>
           <div class="ml-2 d-flex flex-column justify-center font-weight-bold text-white">
-            <span class="text-h6 font-weight-medium" style="font-size: 32px">12</span>
+            <span class="text-h6 font-weight-medium" style="font-size: 32px">{{ stats?.active_groups }}</span>
             <span class="text-h6 font-weight-medium" style="font-size: 16px">Активные группы</span>
           </div>
         </v-card>
@@ -25,7 +25,7 @@
         <v-card class="pa-4 rounded-xl d-flex justify-start" height="100%" style="background-image: linear-gradient(to bottom, rgba(54, 199, 90, 0.6) 0%, rgba(54, 199, 90, 1) 100%);" variant="tonal">
           <v-icon class="h-100 w-33"><ruble-icon /></v-icon>
           <div class="ml-2 d-flex flex-column justify-center font-weight-bold text-white">
-            <span class="text-h6 font-weight-medium" style="font-size: 32px">1 200 000</span>
+            <span class="text-h6 font-weight-medium" style="font-size: 32px">{{ stats?.study_budget }}</span>
             <span class="text-h6 font-weight-medium" style="font-size: 16px">Общий бюджет обучения</span>
           </div>
         </v-card>
@@ -35,7 +35,7 @@
         <v-card class="pa-4 rounded-xl d-flex justify-start" height="100%" style="background-image: linear-gradient(to bottom, rgba(255, 141, 40, 0.6) 0%, rgba(255, 141, 40, 1) 100%);" variant="tonal">
           <v-icon class="h-100 w-33"><pie-chart-icon /></v-icon>
           <div class="ml-2 d-flex flex-column justify-center font-weight-bold text-white">
-            <span class="text-h6 font-weight-medium" style="font-size: 32px">65%</span>
+            <span class="text-h6 font-weight-medium" style="font-size: 32px">{{ stats?.average_progress }}%</span>
             <span class="text-h6 font-weight-medium" style="font-size: 16px">Средний прогресс</span>
           </div>
         </v-card>
@@ -45,7 +45,7 @@
         <v-card class="pa-4 rounded-xl d-flex justify-start" height="100%" style="background-image: linear-gradient(to bottom, rgba(255, 46, 85, 0.6) 0%, rgba(255, 46, 85, 1) 100%);" variant="tonal">
           <v-icon class="h-100 w-33"><official-suit-icon /></v-icon>
           <div class="ml-2 d-flex flex-column justify-center font-weight-bold text-white">
-            <span class="text-h6 font-weight-medium" style="font-size: 32px">48</span>
+            <span class="text-h6 font-weight-medium" style="font-size: 32px">{{ stats?.active_employees }}</span>
             <span class="text-h6 font-weight-medium" style="font-size: 16px">Сотрудников в обучении</span>
           </div>
         </v-card>
@@ -60,7 +60,9 @@
 </template>
 
 <script setup lang="ts">
-  import { onMounted } from 'vue'
+  import type { Stats } from '@/types/api'
+  import { onMounted, ref } from 'vue'
+  import api from '@/api/client'
   import GanttChart from '@/components/GanttChart.vue'
   import OfficialSuitIcon from '@/icons/OfficialSuitIcon.vue'
   import PeopleIcon from '@/icons/PeopleIcon.vue'
@@ -69,11 +71,12 @@
   import { useGantt } from '@/stores/ganttChartStore'
 
   const ganttChartStore = useGantt()
+  const stats = ref<Stats>()
 
   // 🔄 Инициализация данных
   onMounted(async () => {
     if (!ganttChartStore.state.data) await ganttChartStore.fetch()
-    console.log(ganttChartStore.state.data)
+    stats.value = (await api.get<Stats>('/api/stats/')).data
   })
 </script>
 

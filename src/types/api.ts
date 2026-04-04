@@ -90,6 +90,7 @@ export interface SimpleGroupResponse {
   end_date: Date // YYYY-MM-DD
   status?: GroupStatus
   average_progress: number
+  members?: Array<SimpleEmployeeResponse>
 }
 
 export interface GroupRequest {
@@ -155,4 +156,12 @@ export interface GanttResponse {
 /* --- POST /api/xml/upload/ --- */
 export interface XmlUploadRequest {
   file: File
+}
+
+/* --- GET /api/stats/ --- */
+export interface Stats {
+  active_groups: number
+  study_budget: number
+  average_progress: number
+  active_employees: number
 }

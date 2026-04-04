@@ -1,6 +1,6 @@
 <template>
   <v-app>
-    <AppSidebar style="position: absolute; height: 100vh"/>
+    <AppSidebar style="position: absolute; height: 100vh" />
     <v-main class="bg-grey-lighten-4" scrollable>
       <v-container class="pa-4 pa-md-8" fluid>
         <transition mode="out-in" name="fade">
