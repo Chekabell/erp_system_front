@@ -131,7 +131,6 @@ interface GroupEmployeePostResponse {
 
 interface GroupEmployeePostRequest {
   employee_ids: Array<number>
-  progress_percent: number
 }
 
 /* --- PATCH /api/group/{id}/employee/{id}/ --- */
