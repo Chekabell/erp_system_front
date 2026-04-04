@@ -248,38 +248,6 @@
               variant="outlined"
             />
 
-            <!-- Employees Multi-select -->
-            <v-autocomplete
-              v-model="selectedEmployeeIds"
-              chips
-              closable-chips
-              density="compact"
-              hint="Выберите сотрудников из списка"
-              item-title="full_name"
-              item-value="id"
-              :items="employeesStore.state.items"
-              label="Участники группы"
-              multiple
-              variant="outlined"
-            >
-              <template #item="{ props, item }">
-                <v-list-item v-bind="props">
-                  <template #subtitle>
-                    {{ item.raw?.company?.name ?? '—' }} • {{ item.raw?.email ?? '—' }}
-                  </template>
-                </v-list-item>
-              </template>
-            </v-autocomplete>
-
-            <!-- Real-time Cost Calculation -->
-            <v-alert class="mt-4" type="info" variant="tonal">
-              <template #title>💰 Расчет стоимости</template>
-              <div class="text-body-2">
-                <div>Цена за человека: <strong>{{ formatCurrency(coursePrice) }}</strong></div>
-                <div>Участников: <strong>{{ selectedEmployeeIds.length }}</strong></div>
-                <div class="text-h6 font-weight-bold mt-2">Итого: {{ formatCurrency(calculatedCost) }}</div>
-              </div>
-            </v-alert>
           </v-form>
         </v-card-text>
 
@@ -554,7 +522,7 @@ import api from '@/api/client'
       total_cost: group.total_cost,
     }
     // Load assigned employees (would need separate API call in real app)
-    selectedEmployeeIds.value = [] // Placeholder
+    selectedEmployeeIds.value =  group.employee_ids || []// Placeholder
     coursePrice.value = Number.parseFloat(group.course.base_price)
     formDialog.value = true
   }
@@ -570,10 +538,12 @@ import api from '@/api/client'
         end_date: formData.value.end_date,
         status: formData.value.status,
         total_cost: calculatedCost.value.toFixed(2),
+        employee_ids: selectedEmployeeIds.value
       }
+
       await (isEditing.value && formData.value.id ? groupsStore.update(formData.value.id, payload) : groupsStore.create(payload))
       formDialog.value = false
-      groupsStore.fetch() // Refresh list
+      await groupsStore.fetch() // Refresh list
     } catch (error) {
       console.error('Ошибка сохранения группы:', error)
     } finally {
