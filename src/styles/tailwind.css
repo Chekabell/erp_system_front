@@ -26,9 +26,6 @@
   --breakpoint-xxl: 2138px;
 }
 
-@custom-variant light (&:where(.v-theme--light, .v-theme--light *));
-@custom-variant dark (&:where(.v-theme--dark, .v-theme--dark *));
-
 /* safelist to ensure variables are always available */
 @source inline('font-heading');
 @source inline('font-body');

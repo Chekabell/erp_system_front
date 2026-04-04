@@ -1,7 +1,7 @@
+import type { PaginatedResponse } from '@/types/api'
 // src/stores/base.ts
 import { reactive } from 'vue'
 import api from '@/api/client'
-import type { PaginatedResponse } from '@/types/api'
 
 export interface PaginationMeta {
   count: number
@@ -19,7 +19,7 @@ export interface StoreState<T> {
   isFetched: boolean
 }
 
-export function createEntityStore<T>(endpoint: string) {
+export function createEntityStore<T> (endpoint: string) {
   const state = reactive<StoreState<T>>({
     items: [],
     loading: false,
@@ -29,19 +29,23 @@ export function createEntityStore<T>(endpoint: string) {
       next: null,
       previous: null,
       page: 1,
-      pageSize: 10
+      pageSize: 10,
     },
-    isFetched: false
+    isFetched: false,
   })
 
   const extractPage = (url: string | null): number | null => {
-    if (!url) return null
+    if (!url) {
+      return null
+    }
     const match = url.match(/[?&]page=(\d+)/)
-    return match ? parseInt(match[1], 10) : null
+    return match ? Number.parseInt(match[1], 10) : null
   }
 
   const fetch = async (params: Record<string, any> = {}, force = false) => {
-    if (state.isFetched && !force && !params.page && !params.search) return
+    if (state.isFetched && !force && !params.page && !params.search) {
+      return
+    }
 
     state.loading = true
     state.error = null
@@ -50,12 +54,14 @@ export function createEntityStore<T>(endpoint: string) {
       const requestParams = {
         page: state.pagination.page,
         page_size: state.pagination.pageSize,
-        ...params
+        ...params,
       }
       // Удаляем undefined/null значения
-      Object.keys(requestParams).forEach(k => {
-        if (requestParams[k] == null) delete requestParams[k]
-      })
+      for (const k of Object.keys(requestParams)) {
+        if (requestParams[k] == null) {
+          delete requestParams[k]
+        }
+      }
 
       const response = await api.get<PaginatedResponse<T>>(endpoint, { params: requestParams })
 
@@ -65,9 +71,9 @@ export function createEntityStore<T>(endpoint: string) {
       state.pagination.previous = response.data.previous
       state.pagination.page = requestParams.page || 1
       state.isFetched = true
-    } catch (err: any) {
-      state.error = err.response?.data?.detail || 'Ошибка загрузки данных'
-      console.error(`[Store ${endpoint}] Error:`, err)
+    } catch (error: any) {
+      state.error = error.response?.data?.detail || 'Ошибка загрузки данных'
+      console.error(`[Store ${endpoint}] Error:`, error)
     } finally {
       state.loading = false
     }
@@ -81,7 +87,9 @@ export function createEntityStore<T>(endpoint: string) {
   }
 
   const goToPage = (page: number) => {
-    if (page < 1 || page > Math.ceil(state.pagination.count / state.pagination.pageSize)) return
+    if (page < 1 || page > Math.ceil(state.pagination.count / state.pagination.pageSize)) {
+      return
+    }
     state.pagination.page = page
     state.isFetched = false
     fetch()
@@ -89,12 +97,16 @@ export function createEntityStore<T>(endpoint: string) {
 
   const next = () => {
     const nextPage = extractPage(state.pagination.next)
-    if (nextPage) goToPage(nextPage)
+    if (nextPage) {
+      goToPage(nextPage)
+    }
   }
 
   const prev = () => {
     const prevPage = extractPage(state.pagination.previous)
-    if (prevPage) goToPage(prevPage)
+    if (prevPage) {
+      goToPage(prevPage)
+    }
   }
 
   const reset = () => {
@@ -113,9 +125,9 @@ export function createEntityStore<T>(endpoint: string) {
       state.items.unshift(response.data)
       state.pagination.count += 1
       return response.data
-    } catch (err: any) {
-      state.error = err.response?.data || 'Ошибка создания'
-      throw err
+    } catch (error: any) {
+      state.error = error.response?.data || 'Ошибка создания'
+      throw error
     }
   }
 
@@ -127,9 +139,9 @@ export function createEntityStore<T>(endpoint: string) {
         state.items[index] = response.data
       }
       return response.data
-    } catch (err: any) {
-      state.error = err.response?.data || 'Ошибка обновления'
-      throw err
+    } catch (error: any) {
+      state.error = error.response?.data || 'Ошибка обновления'
+      throw error
     }
   }
 
@@ -138,9 +150,9 @@ export function createEntityStore<T>(endpoint: string) {
       await api.delete(`${endpoint}${id}/`)
       state.items = state.items.filter((item: any) => item.id !== id)
       state.pagination.count -= 1
-    } catch (err: any) {
-      state.error = err.response?.data || 'Ошибка удаления'
-      throw err
+    } catch (error: any) {
+      state.error = error.response?.data || 'Ошибка удаления'
+      throw error
     }
   }
 
@@ -154,6 +166,6 @@ export function createEntityStore<T>(endpoint: string) {
     changePageSize,
     create,
     update,
-    remove
+    remove,
   }
 }

@@ -5,14 +5,17 @@
  */
 
 import { createVuetify } from 'vuetify'
+import { components, directives } from 'vuetify/dist/vuetify.js'
 import '@mdi/font/css/materialdesignicons.css'
 import '../styles/layers.css'
 import 'vuetify/styles'
 
 export default createVuetify({
+  components,
+  directives,
   theme: {
     themes: {
-      default: {
+      light: {
         dark: false,
         colors: {
           primary: '#9933CC',
@@ -25,7 +28,7 @@ export default createVuetify({
         },
       },
     },
-    defaultTheme: 'default',
+    defaultTheme: 'light',
     utilities: false,
   },
   display: {

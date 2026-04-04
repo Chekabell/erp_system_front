@@ -147,8 +147,8 @@ export interface GroupEmployeePatchRequest {
 
 /* --- GET /api/gantt-data/ --- */
 export interface GanttResponse {
-  min_date: string // YYYY-MM-DD
-  max_date: string // YYYY-MM-DD
+  min_date: Date // YYYY-MM-DD
+  max_date: Date // YYYY-MM-DD
   groups: Array<SimpleGroupResponse>
 }
 

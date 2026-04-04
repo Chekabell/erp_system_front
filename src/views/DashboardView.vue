@@ -1,24 +1,24 @@
 <template>
-  <v-container fluid class="pa-6">
+  <v-container class="pa-6" fluid>
     <!-- Заголовок -->
-    <v-row class="mb-6" align="center">
+    <v-row align="center" class="mb-6">
       <v-col>
         <h1 class="text-h3 font-weight-bold mb-1">Панель управления</h1>
         <p class="text-body-1 text-medium-emphasis">Корпоративное обучение: ключевые показатели и планирование</p>
       </v-col>
       <v-col cols="auto">
-        <v-chip color="primary" variant="tonal" size="large" prepend-icon="mdi-calendar">
+        <v-chip color="primary" prepend-icon="mdi-calendar" size="large" variant="tonal">
           {{ currentDate }}
         </v-chip>
       </v-col>
     </v-row>
 
     <!-- 📊 KPI Карточки -->
-    <v-row dense class="mb-6">
-      <v-col cols="12" sm="6" md="3">
-        <v-card class="pa-4" variant="tonal" color="primary" height="100%">
+    <v-row class="mb-6" dense>
+      <v-col cols="12" md="3" sm="6">
+        <v-card class="pa-4" color="primary" height="100%" variant="tonal">
           <div class="d-flex align-center ga-3 mb-3">
-            <v-avatar color="primary" variant="elevated" size="40" class="text-white">
+            <v-avatar class="text-white" color="primary" size="40" variant="elevated">
               <v-icon>mdi-office-building-marker</v-icon>
             </v-avatar>
             <span class="text-h6 font-weight-medium">Компании</span>
@@ -28,10 +28,10 @@
         </v-card>
       </v-col>
 
-      <v-col cols="12" sm="6" md="3">
-        <v-card class="pa-4" variant="tonal" color="success" height="100%">
+      <v-col cols="12" md="3" sm="6">
+        <v-card class="pa-4" color="success" height="100%" variant="tonal">
           <div class="d-flex align-center ga-3 mb-3">
-            <v-avatar color="success" variant="elevated" size="40" class="text-white">
+            <v-avatar class="text-white" color="success" size="40" variant="elevated">
               <v-icon>mdi-book-open-page-variant</v-icon>
             </v-avatar>
             <span class="text-h6 font-weight-medium">Курсы</span>
@@ -41,10 +41,10 @@
         </v-card>
       </v-col>
 
-      <v-col cols="12" sm="6" md="3">
-        <v-card class="pa-4" variant="tonal" color="warning" height="100%">
+      <v-col cols="12" md="3" sm="6">
+        <v-card class="pa-4" color="warning" height="100%" variant="tonal">
           <div class="d-flex align-center ga-3 mb-3">
-            <v-avatar color="warning" variant="elevated" size="40" class="text-white">
+            <v-avatar class="text-white" color="warning" size="40" variant="elevated">
               <v-icon>mdi-account-group</v-icon>
             </v-avatar>
             <span class="text-h6 font-weight-medium">Активные группы</span>
@@ -54,10 +54,10 @@
         </v-card>
       </v-col>
 
-      <v-col cols="12" sm="6" md="3">
-        <v-card class="pa-4" variant="tonal" color="info" height="100%">
+      <v-col cols="12" md="3" sm="6">
+        <v-card class="pa-4" color="info" height="100%" variant="tonal">
           <div class="d-flex align-center ga-3 mb-3">
-            <v-avatar color="info" variant="elevated" size="40" class="text-white">
+            <v-avatar class="text-white" color="info" size="40" variant="elevated">
               <v-icon>mdi-currency-rub</v-icon>
             </v-avatar>
             <span class="text-h6 font-weight-medium">Бюджет (с НДС)</span>
@@ -74,29 +74,29 @@
       <v-col cols="12" md="7">
         <v-card class="h-100" elevation="2">
           <v-card-title class="text-h6 font-weight-bold pa-4">
-            <v-icon start color="primary">mdi-calendar-clock</v-icon>
+            <v-icon color="primary" start>mdi-calendar-clock</v-icon>
             Ближайшие учебные группы (30 дней)
           </v-card-title>
-          <v-divider></v-divider>
-          <v-list lines="two" class="pa-2">
-            <v-skeleton-loader v-if="groupsStore.state.loading" type="list-item@3" class="pa-4" />
+          <v-divider />
+          <v-list class="pa-2" lines="two">
+            <v-skeleton-loader v-if="groupsStore.state.loading" class="pa-4" type="list-item@3" />
             <template v-else>
               <v-list-item v-for="group in upcomingGroups" :key="group.id" :prepend-icon="getGroupIcon(group.status)">
-                <template v-slot:title>
+                <template #title>
                   <span class="font-weight-medium">{{ group.course.title }}</span>
                 </template>
-                <template v-slot:subtitle>
+                <template #subtitle>
                   {{ formatDate(group.start_date) }} – {{ formatDate(group.end_date) }} • {{ group.employees_count }} уч.
                 </template>
-                <template v-slot:append>
-                  <v-chip size="small" :color="getStatusColor(group.status)" variant="tonal">
+                <template #append>
+                  <v-chip :color="getStatusColor(group.status)" size="small" variant="tonal">
                     {{ getStatusLabel(group.status) }}
                   </v-chip>
                 </template>
               </v-list-item>
               <v-list-item v-if="upcomingGroups.length === 0" class="text-center">
-                <template v-slot:title class="text-medium-emphasis">Нет запланированных групп</template>
-                <template v-slot:subtitle>Создайте новую группу в разделе "Учебные группы"</template>
+                <template #title class="text-medium-emphasis">Нет запланированных групп</template>
+                <template #subtitle>Создайте новую группу в разделе "Учебные группы"</template>
               </v-list-item>
             </template>
           </v-list>
@@ -107,36 +107,42 @@
       <v-col cols="12" md="5">
         <v-card class="h-100" elevation="2">
           <v-card-title class="text-h6 font-weight-bold pa-4">
-            <v-icon start color="success">mdi-chart-pie</v-icon>
+            <v-icon color="success" start>mdi-chart-pie</v-icon>
             Статусы обучения
           </v-card-title>
-          <v-divider></v-divider>
+          <v-divider />
           <v-card-text class="pa-4">
             <div class="mb-4">
               <div class="d-flex justify-space-between mb-1">
                 <span class="font-weight-medium">Завершено</span>
                 <span class="font-weight-bold">{{ stats.completed }} ({{ stats.completedPercent }}%)</span>
               </div>
-              <v-progress-linear :model-value="stats.completedPercent" color="success" height="8" rounded></v-progress-linear>
+              <v-progress-linear color="success" height="8" :model-value="stats.completedPercent" rounded />
             </div>
             <div class="mb-4">
               <div class="d-flex justify-space-between mb-1">
                 <span class="font-weight-medium">В процессе</span>
                 <span class="font-weight-bold">{{ stats.inProgress }} ({{ stats.inProgressPercent }}%)</span>
               </div>
-              <v-progress-linear :model-value="stats.inProgressPercent" color="warning" height="8" rounded></v-progress-linear>
+              <v-progress-linear color="warning" height="8" :model-value="stats.inProgressPercent" rounded />
             </div>
             <div class="mb-4">
               <div class="d-flex justify-space-between mb-1">
                 <span class="font-weight-medium">Планируется</span>
                 <span class="font-weight-bold">{{ stats.planned }} ({{ stats.plannedPercent }}%)</span>
               </div>
-              <v-progress-linear :model-value="stats.plannedPercent" color="primary" height="8" rounded></v-progress-linear>
+              <v-progress-linear color="primary" height="8" :model-value="stats.plannedPercent" rounded />
             </div>
           </v-card-text>
-          <v-divider></v-divider>
+          <v-divider />
           <v-card-actions class="pa-4">
-            <v-btn block color="primary" variant="tonal" to="/groups" prepend-icon="mdi-plus">
+            <v-btn
+              block
+              color="primary"
+              prepend-icon="mdi-plus"
+              to="/groups"
+              variant="tonal"
+            >
               Создать учебную группу
             </v-btn>
           </v-card-actions>
@@ -149,10 +155,10 @@
       <v-col cols="12">
         <v-card elevation="2">
           <v-card-title class="text-h6 font-weight-bold pa-4">
-            <v-icon start color="info">mdi-file-document-multiple</v-icon>
+            <v-icon color="info" start>mdi-file-document-multiple</v-icon>
             Последние спецификации
           </v-card-title>
-          <v-divider></v-divider>
+          <v-divider />
           <v-table density="comfortable">
             <thead>
               <tr class="bg-surface-variant">
@@ -170,11 +176,17 @@
                 <td>{{ spec.company.name }}</td>
                 <td class="text-right font-weight-bold">{{ formatCurrency(spec.total_with_vat) }}</td>
                 <td class="text-center">
-                  <v-btn icon="mdi-eye" variant="text" color="primary" size="small" @click="router.push('/specifications')" />
+                  <v-btn
+                    color="primary"
+                    icon="mdi-eye"
+                    size="small"
+                    variant="text"
+                    @click="router.push('/specifications')"
+                  />
                 </td>
               </tr>
               <tr v-if="recentSpecs.length === 0">
-                <td colspan="5" class="text-center text-medium-emphasis py-6">Спецификации отсутствуют</td>
+                <td class="text-center text-medium-emphasis py-6" colspan="5">Спецификации отсутствуют</td>
               </tr>
             </tbody>
           </v-table>
@@ -197,28 +209,28 @@
   // 📅 Утилиты
   const currentDate = new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
 
-  const formatDate = (dateStr: string): string => {
+  function formatDate (dateStr: string): string {
     if (!dateStr) return '--'
     const [y, m, d] = dateStr.split('-')
     return `${d}.${m}.${y}`
   }
 
-  const formatCurrency = (val: string | number): string => {
-    const num = typeof val === 'string' ? parseFloat(val) : val
+  function formatCurrency (val: string | number): string {
+    const num = typeof val === 'string' ? Number.parseFloat(val) : val
     return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 0 }).format(num || 0)
   }
 
-  const getStatusColor = (s?: string): string => {
+  function getStatusColor (s?: string): string {
     const map: Record<string, string> = { planned: 'blue', in_progress: 'orange', completed: 'green' }
     return map[s || ''] || 'grey'
   }
 
-  const getStatusLabel = (s?: string): string => {
+  function getStatusLabel (s?: string): string {
     const map: Record<string, string> = { planned: 'Планируется', in_progress: 'В процессе', completed: 'Завершено' }
     return map[s || ''] || 'Неизвестно'
   }
 
-  const getGroupIcon = (s?: string): string => {
+  function getGroupIcon (s?: string): string {
     const map: Record<string, string> = { planned: 'mdi-calendar-clock', in_progress: 'mdi-progress-clock', completed: 'mdi-check-decagram' }
     return map[s || ''] || 'mdi-help-circle'
   }
@@ -233,7 +245,7 @@
     const inProgress = groups.filter(g => g.status === 'in_progress').length
     const planned = groups.filter(g => g.status === 'planned').length
 
-    const totalBudget = specs.reduce((sum, s) => sum + (parseFloat(String(s.total_with_vat)) || 0), 0)
+    const totalBudget = specs.reduce((sum, s) => sum + (Number.parseFloat(String(s.total_with_vat)) || 0), 0)
 
     return {
       companies: companiesStore.state.pagination.count,
@@ -246,7 +258,7 @@
       totalBudget,
       completedPercent: totalGroupsCount ? Math.round((completed / totalGroupsCount) * 100) : 0,
       inProgressPercent: totalGroupsCount ? Math.round((inProgress / totalGroupsCount) * 100) : 0,
-      plannedPercent: totalGroupsCount ? Math.round((planned / totalGroupsCount) * 100) : 0
+      plannedPercent: totalGroupsCount ? Math.round((planned / totalGroupsCount) * 100) : 0,
     }
   })
 

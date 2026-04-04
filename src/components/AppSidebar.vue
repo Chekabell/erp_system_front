@@ -1,7 +1,7 @@
 <template>
   <v-navigation-drawer
     v-model="drawer"
-    class="bg-surface-light"
+    class="bg-primary"
     expand-on-hover
     permanent
     :rail="rail"
