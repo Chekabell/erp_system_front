@@ -1,7 +1,7 @@
 <template>
   <v-app>
-    <AppSidebar />
-    <v-main class="bg-grey-lighten-4">
+    <AppSidebar style="position: absolute; height: 100vh"/>
+    <v-main class="bg-grey-lighten-4" scrollable>
       <v-container class="pa-4 pa-md-8" fluid>
         <transition mode="out-in" name="fade">
           <router-view v-slot="{ Component }">

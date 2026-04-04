@@ -60,15 +60,14 @@
     <v-empty-state v-if="!coursesStore.state.loading && coursesStore.state.items.length === 0" title="Курсы не найдены" icon="mdi-book-off" class="mt-8" />
 
     <!-- Footer: Page Size & Pagination -->
-    <div class="d-flex justify-space-between align-center mt-6 pa-3 bg-surface-variant rounded-lg" v-if="totalPages > 0">
-      <v-pagination
-        v-if="totalPages > 1"
-        :model-value="coursesStore.state.pagination.page"
-        :length="totalPages"
-        :total-visible="7"
-        @update:model-value="coursesStore.goToPage"
-      />
-    </div>
+    <div class="d-flex justify-space-between align-center mt-6 pa-3 bg-surface-variant rounded-lg" v-if="totalPages > 1">
+    <v-pagination
+      :model-value="coursesStore.state.pagination.page || 1"
+      :length="totalPages"
+      :total-visible="7"
+      @update:model-value="handlePageChange"
+    />
+  </div>
 
     <!-- Modal -->
     <v-dialog v-model="dialog" max-width="650" scrollable>
@@ -94,21 +93,42 @@
   import { coursesStore } from '@/stores/coursesStore'
   import type { CourseResponse } from '@/types/api'
 
+  const PER_PAGE = 12 // 🔒 Фиксируем константой
   const search = ref('')
   const dialog = ref(false)
   const selectedCourse = ref<CourseResponse | null>(null)
 
-  const totalPages = computed(() => Math.ceil(coursesStore.state.pagination.count / coursesStore.state.pagination.pageSize) || 1)
+  // Безопасный расчет (защита от NaN/undefined при первой загрузке)
+  const totalPages = computed(() => {
+    const count = coursesStore.state.pagination?.count || 0
+    return Math.ceil(count / PER_PAGE) || 1
+  })
+
+  // 🔑 Явно передаем per_page при смене страницы
+  const handlePageChange = (page: number) => {
+    coursesStore.fetch({ page, per_page: PER_PAGE })
+  }
 
   const handleSearch = () => {
     coursesStore.reset()
-    coursesStore.fetch({ search: search.value || undefined })
+    // Важно: при поиске тоже сохраняем per_page, иначе сбросится на 10
+    coursesStore.fetch({ search: search.value || undefined, per_page: PER_PAGE })
   }
-  const openModal = (course: CourseResponse) => { selectedCourse.value = course; dialog.value = true }
-  const getAccentColor = (id: number) => ['primary','success','warning','info','purple','teal','indigo','deep-orange'][id % 8]
-  const formatPrice = (p: string) => new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 0 }).format(parseFloat(p) || 0)
 
-  onMounted(() => coursesStore.fetch())
+  const openModal = (course: CourseResponse) => {
+    selectedCourse.value = course
+    dialog.value = true
+  }
+
+  const getAccentColor = (id: number) =>
+    ['primary','success','warning','info','purple','teal','indigo','deep-orange'][id % 8]
+
+  const formatPrice = (p: string) =>
+    new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 0 }).format(parseFloat(p) || 0)
+
+  onMounted(() => {
+    coursesStore.fetch({ per_page: PER_PAGE })
+  })
 </script>
 
 <style scoped>

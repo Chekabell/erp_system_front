@@ -5,13 +5,14 @@
     expand-on-hover
     permanent
     :rail="rail"
+    :rail-width="75"
   >
     <template #prepend>
-      <v-list-item class="px-4" prepend-icon="mdi-graduation-cap" subtitle="Хакатон v2" title="Global ERP Learning" />
+      <v-list-item class="px-4" prepend-icon="$vuetify" subtitle="Хакатон v2" title="Global ERP Learning" />
       <v-divider />
     </template>
 
-    <v-list density="compact" nav class="bg-primary text-h3" >
+    <v-list density="compact" nav class="bg-primary " >
       <v-list-item
         v-for="item in menuItems"
         :key="item.route"
@@ -48,3 +49,44 @@
     { title: 'Компании', route: '/companies', icon: 'mdi-office-building-marker' },
   ]
 </script>
+
+<style scoped>
+:deep(.v-list-item-title){
+  font-size: 18px;
+  height: 20px;
+  display: contents;
+}
+
+:deep(.v-list-item__content){
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column;
+    justify-content: center;
+  height: auto;
+}
+
+:deep(.v-list-item__prepend){
+  align-self: center;
+  display: flex;
+  grid-area: prepend;
+  flex-direction: column;
+  font-size: 18px;
+}
+
+:deep(.v-navigation-drawer__prepend){
+  height: 80px;
+  display: inline-grid;
+  align-items: end;
+}
+
+:deep(.v-list-item){
+  margin: 5px;
+}
+
+:deep(.v-list){
+    gap: 10px;
+    display: grid;
+}
+
+
+</style>
