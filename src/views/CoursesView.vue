@@ -7,7 +7,7 @@
           <h1 class="text-h4 font-weight-bold mb-1">Курсы обучения</h1>
           <p class="text-body-2 text-medium-emphasis">Образовательные программы, доступные для записи участников</p>
         </div>
-        <div class="d-flex ga-3" style="max-width: 500px; flex: 1;">
+        <div class="d-flex ga-3" style="max-width: 600px; flex: 1;">
           <v-text-field
             v-model="search"
             density="compact"
@@ -18,17 +18,18 @@
             @keyup.enter="handleSearch"
           />
           <v-btn color="primary" :loading="coursesStore.state.loading" @click="handleSearch">Найти</v-btn>
+          <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreateDialog">Создать</v-btn>
         </div>
       </div>
     </v-card>
 
-    <!-- Loading / Error -->
+    <!-- 🔹 Loading / Error -->
     <div v-if="coursesStore.state.loading && !coursesStore.state.isFetched" class="d-flex justify-center mt-8">
       <v-progress-circular color="primary" indeterminate size="64" />
     </div>
     <v-alert v-else-if="coursesStore.state.error" class="mt-4" type="error" variant="tonal">{{ coursesStore.state.error }}</v-alert>
 
-    <!-- Grid -->
+    <!-- 🔹 Grid -->
     <v-row v-else dense>
       <v-col
         v-for="course in coursesStore.state.items"
@@ -76,7 +77,7 @@
       />
     </div>
 
-    <!-- Modal -->
+    <!-- 🔹 Dialog: Просмотр курса -->
     <v-dialog v-model="dialog" max-width="650" scrollable>
       <v-card v-if="selectedCourse" class="rounded-lg">
         <v-card-title class="text-h5 font-weight-bold pt-4">{{ selectedCourse.title }}</v-card-title>
@@ -100,12 +101,9 @@
   import { computed, onMounted, ref } from 'vue'
   import { coursesStore } from '@/stores/coursesStore'
 
-  const PER_PAGE = 12 // 🔒 Фиксируем константой
+  // 🔍 Поиск и пагинация
   const search = ref('')
-  const dialog = ref(false)
-  const selectedCourse = ref<CourseResponse | null>(null)
 
-  // Безопасный расчет (защита от NaN/undefined при первой загрузке)
   const totalPages = computed(() => {
     const count = coursesStore.state.pagination?.count || 0
     return Math.ceil(count / PER_PAGE) || 1
@@ -136,7 +134,7 @@
   }
 
   onMounted(() => {
-    coursesStore.fetch({ per_page: PER_PAGE })
+    fetchCourses() // ✅ Первая загрузка с per_page=12
   })
 </script>
 

@@ -7,7 +7,7 @@
           <h1 class="text-h4 font-weight-bold mb-1">Участники обучения</h1>
           <p class="text-body-2 text-medium-emphasis">Сотрудники компаний, проходящие обучение</p>
         </div>
-        <div class="d-flex ga-3" style="max-width: 500px; flex: 1;">
+        <div class="d-flex ga-3" style="max-width: 600px; flex: 1;">
           <v-text-field
             v-model="search"
             density="compact"
@@ -18,11 +18,12 @@
             @keyup.enter="handleSearch"
           />
           <v-btn color="primary" :loading="employeesStore.state.loading" @click="handleSearch">Найти</v-btn>
+          <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreateDialog">Создать</v-btn>
         </div>
       </div>
     </v-card>
 
-    <!-- Loading / Error -->
+    <!-- 🔹 Loading / Error -->
     <div v-if="employeesStore.state.loading && !employeesStore.state.isFetched" class="d-flex justify-center mt-8">
       <v-progress-circular color="primary" indeterminate size="64" />
     </div>
@@ -90,7 +91,7 @@
       </div>
     </v-card>
 
-    <!-- Modal -->
+    <!-- 🔹 Modal: Просмотр участника -->
     <v-dialog v-model="dialog" max-width="600">
       <v-card v-if="selectedEmployee">
         <v-card-title class="text-h5 font-weight-bold pt-4 d-flex align-center ga-3">
@@ -118,11 +119,9 @@
   import { computed, onMounted, ref } from 'vue'
   import { employeesStore } from '@/stores/employeesStore'
 
-  const search = ref('')
-  const dialog = ref(false)
-  const selectedEmployee = ref<EmployeeResponse | null>(null)
-
-  const totalPages = computed(() => Math.ceil(employeesStore.state.pagination.count / employeesStore.state.pagination.pageSize) || 1)
+// 🔍 Поиск и пагинация
+const search = ref('')
+const totalPages = computed(() => Math.ceil(employeesStore.state.pagination.count / employeesStore.state.pagination.pageSize) || 1)
 
   const headers = [
     { title: 'Сотрудник', key: 'full_name', width: 300 },

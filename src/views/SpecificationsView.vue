@@ -7,7 +7,7 @@
           <h1 class="text-h4 font-weight-bold mb-1">Спецификации обучения</h1>
           <p class="text-body-2 text-medium-emphasis">Юридические документы, агрегирующие учебные группы и итоговую стоимость</p>
         </div>
-        <div class="d-flex ga-3" style="max-width: 500px; flex: 1;">
+        <div class="d-flex ga-3" style="max-width: 600px; flex: 1;">
           <v-text-field
             v-model="search"
             density="compact"
@@ -22,7 +22,7 @@
       </div>
     </v-card>
 
-    <!-- Loading / Error -->
+    <!-- 🔹 Loading / Error -->
     <div v-if="specificationsStore.state.loading && !specificationsStore.state.isFetched" class="d-flex justify-center mt-8">
       <v-progress-circular color="primary" indeterminate size="64" />
     </div>
@@ -96,7 +96,7 @@
       </div>
     </v-card>
 
-    <!-- Modal -->
+    <!-- 🔹 Modal: Просмотр спецификации -->
     <v-dialog v-model="dialog" max-width="900" scrollable>
       <v-card v-if="selectedSpec" class="rounded-lg">
         <v-card-title class="text-h5 font-weight-bold pt-4 d-flex align-center ga-2">
@@ -145,10 +145,8 @@
   import { computed, onMounted, ref } from 'vue'
   import { specificationsStore } from '@/stores/specificationsStore'
 
+  // 🔍 Поиск и пагинация
   const search = ref('')
-  const dialog = ref(false)
-  const selectedSpec = ref<SpecificationResponse | null>(null)
-
   const totalPages = computed(() => Math.ceil(specificationsStore.state.pagination.count / specificationsStore.state.pagination.pageSize) || 1)
 
   const headers = [
