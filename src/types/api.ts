@@ -1,10 +1,10 @@
 /* --- ENUMS --- */
-type GroupStatus = 'planned' | 'in_progress' | 'completed'
+export type GroupStatus = 'planned' | 'in_progress' | 'completed'
 /* --- GET /api/xml/{model_type}/{obj_id}/ --- */
-type XmlExportModelType = 'employee' | 'course'
+export type XmlExportModelType = 'employee' | 'course'
 
 /* --- PAGINATION --- */
-interface PaginatedResponse<T> {
+export interface PaginatedResponse<T> {
   count: number
   next: string | null
   previous: string | null
@@ -12,7 +12,7 @@ interface PaginatedResponse<T> {
 }
 
 /* --- /api/employees/ --- */
-interface EmployeeResponse {
+export interface EmployeeResponse {
   id: number
   full_name: string
   company: CompanyResponse
@@ -20,14 +20,14 @@ interface EmployeeResponse {
   groups: Array<SimpleGroupResponse>
 }
 
-interface SimpleEmployeeResponse {
+export interface SimpleEmployeeResponse {
   id: number
   full_name: string
   company_name: string
   email: string
 }
 
-interface EmployeeRequest {
+export interface EmployeeRequest {
   full_name: string
   company_id: number
   email: string
@@ -35,7 +35,7 @@ interface EmployeeRequest {
 }
 
 /* --- /api/course/ --- */
-interface CourseResponse {
+export interface CourseResponse {
   id: number
   title: string
   description: string
@@ -43,10 +43,10 @@ interface CourseResponse {
   base_price: number
 }
 
-type CourseRequest = Omit<CourseResponse, 'id'>
+export type CourseRequest = Omit<CourseResponse, 'id'>
 
 /* --- /api/specification/ --- */
-interface SpecificationResponse {
+export interface SpecificationResponse {
   id: number
   date: string // YYYY-MM-DD
   number: string
@@ -57,20 +57,20 @@ interface SpecificationResponse {
   total_with_vat: number
 }
 
-interface SimpleSpecificationResponse {
+export interface SimpleSpecificationResponse {
   id: number
   date: string // YYYY-MM-DD
   number: string
 }
 
-interface SpecificationRequest {
+export interface SpecificationRequest {
   date: string // YYYY-MM-DD
   number: string
   company_id: number
 }
 
 /* --- /api/group/ --- */
-interface GroupResponse {
+export interface GroupResponse {
   id: number
   course: CourseResponse
   specification: SimpleSpecificationResponse
@@ -83,7 +83,7 @@ interface GroupResponse {
   average_progress: number
 }
 
-interface SimpleGroupResponse {
+export interface SimpleGroupResponse {
   id: number
   course_title: string
   start_date: string // YYYY-MM-DD
@@ -92,7 +92,7 @@ interface SimpleGroupResponse {
   average_progress: number
 }
 
-interface GroupRequest {
+export interface GroupRequest {
   course_id: number
   specification_id: number
   start_date: string
@@ -101,22 +101,22 @@ interface GroupRequest {
 }
 
 /* --- /api/company/ --- */
-interface CompanyResponse {
+export interface CompanyResponse {
   id: number
   code: string
   name: string
   specifications: Array<SimpleSpecificationResponse>
 }
 
-type SimpleCompanyResponse = Omit<CompanyResponse, 'id'>
+export type SimpleCompanyResponse = Omit<CompanyResponse, 'id'>
 
-interface CompanyRequest {
+export interface CompanyRequest {
   code: string
   name: string
 }
 
 /* --- GET /api/group/{id}/employee/ --- */
-interface GroupWithEmployeesResponse {
+export interface GroupWithEmployeesResponse {
   group: SimpleGroupResponse
   employees: Array<
     SimpleEmployeeResponse & { progress_percent: number }
@@ -124,35 +124,35 @@ interface GroupWithEmployeesResponse {
 }
 
 /* --- POST /api/group/{id}/employee/ --- */
-interface GroupEmployeePostResponse {
+export interface GroupEmployeePostResponse {
   created: Array<number>
   errors: Array<string>
 }
 
-interface GroupEmployeePostRequest {
+export interface GroupEmployeePostRequest {
   employee_ids: Array<number>
 }
 
 /* --- PATCH /api/group/{id}/employee/{id}/ --- */
-interface GroupEmployeePatchResponse {
+export interface GroupEmployeePatchResponse {
   id: number
   group: SimpleGroupResponse
   employee: SimpleEmployeeResponse
   progress_percent: number
 }
 
-interface GroupEmployeePatchRequest {
+export interface GroupEmployeePatchRequest {
   progress_percent: number
 }
 
 /* --- GET /api/gantt-data/ --- */
-interface GanttResponse {
+export interface GanttResponse {
   min_date: string // YYYY-MM-DD
   max_date: string // YYYY-MM-DD
   groups: Array<SimpleGroupResponse>
 }
 
 /* --- POST /api/xml/upload/ --- */
-interface XmlUploadRequest {
+export interface XmlUploadRequest {
   file: File
 }

@@ -37,12 +37,12 @@
     <!-- Диалог детализации группы -->
     <v-dialog v-model="detailsDialog" max-width="600">
       <v-card v-if="selectedGroup">
-        <v-card-title>{{ selectedGroup.name }}</v-card-title>
+        <v-card-title>{{ selectedGroup.course_title }}</v-card-title>
         <v-card-text>
-          <p><strong>📅 Даты:</strong> {{ formatDate(selectedGroup.startDate) }} – {{ formatDate(selectedGroup.endDate) }}</p>
+          <p><strong>📅 Даты:</strong> {{ selectedGroup.start_date }} – {{ selectedGroup.end_date }}</p>
           <p><strong>📈 Прогресс курса:</strong> {{ selectedGroup.progress }}%</p>
           <v-divider class="my-2" />
-          <p><strong>👥 Состав группы ({{ selectedGroup.members?.length || 0 }} чел.):</strong></p>
+          <p><strong>👥 Состав группы ({{ selectedGroup.?.length || 0 }} чел.):</strong></p>
           <v-chip v-for="member in selectedGroup.members" :key="member.id" class="ma-1" size="small">
             {{ member.name }}
           </v-chip>

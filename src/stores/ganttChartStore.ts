@@ -1,3 +1,3 @@
-import type { GanttItem } from '@/types/api'
+import type { GanttResponse } from '@/types/api'
 import { createEntityStore } from './base'
-export const ganttChartStore = createEntityStore<GanttItem>('/api/gantt_data/')
+export const ganttChartStore = createEntityStore<GanttResponse>('/api/gantt_data/')
