@@ -92,7 +92,7 @@
       <v-divider />
       <div class="d-flex justify-space-between align-center pa-3 bg-surface-variant">
         <div class="d-flex align-center ga-2">
-          <span class="text-caption text-medium-emphasis">Показывать по:</span>
+          <span class="text-caption text-medium-emphasis text-white ">Показывать по:</span>
           <v-select
             v-model="specificationsStore.state.pagination.pageSize"
             density="compact"
@@ -102,7 +102,7 @@
             variant="outlined"
             @update:model-value="specificationsStore.changePageSize"
           />
-          <span class="text-caption text-medium-emphasis">из {{ specificationsStore.state.pagination.count }}</span>
+          <span class="text-caption text-medium-emphasis text-white ">из {{ specificationsStore.state.pagination.count }}</span>
         </div>
 
         <v-pagination

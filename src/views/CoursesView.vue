@@ -126,7 +126,7 @@
       <v-divider />
       <div class="d-flex justify-space-between align-center pa-3 bg-surface-variant">
         <div class="d-flex align-center ga-2">
-          <span class="text-caption text-medium-emphasis">Показывать по:</span>
+          <span class="text-caption text-medium-emphasis text-white ">Показывать по:</span>
           <v-select
             density="compact"
             hide-details
@@ -136,7 +136,7 @@
             variant="outlined"
             @update:model-value="onPageSizeChange"
           />
-          <span class="text-caption text-medium-emphasis">из {{ coursesStore.state.pagination.count }}</span>
+          <span class="text-caption text-medium-emphasis text-white ">из {{ coursesStore.state.pagination.count }}</span>
         </div>
 
         <v-pagination

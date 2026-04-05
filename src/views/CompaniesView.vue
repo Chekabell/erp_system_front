@@ -104,7 +104,7 @@
       <v-divider />
       <div class="d-flex justify-space-between align-center pa-3 bg-surface-variant">
         <div class="d-flex align-center ga-2">
-          <span class="text-caption text-medium-emphasis">Показывать по:</span>
+          <span class="text-caption text-medium-emphasis text-white ">Показывать по:</span>
           <v-select
             density="compact"
             hide-details
@@ -112,9 +112,10 @@
             :model-value="companiesStore.state.pagination.per_page"
             style="width: 80px;"
             variant="outlined"
+
             @update:model-value="onPageSizeChange"
           />
-          <span class="text-caption text-medium-emphasis">из {{ companiesStore.state.pagination.count }}</span>
+          <span class="text-caption text-medium-emphasis text-white">из {{ companiesStore.state.pagination.count }}</span>
         </div>
 
         <v-pagination
@@ -123,6 +124,7 @@
           :model-value="companiesStore.state.pagination.page"
           size="small"
           @update:model-value="onPageChange"
+
         />
       </div>
     </v-card>
@@ -173,36 +175,7 @@
         </v-card-subtitle>
         <v-divider class="my-2" />
           <v-card-text class="pa-4">
-            <!-- 📊 Блок статистики
-             <v-row class="mb-4" dense>
-              <v-col cols="6" sm="3">
-                <v-sheet class="pa-3 rounded text-center" color="primary" variant="tonal">
-                  <div class="text-caption">Участников</div>
-                  <div class="text-h5 font-weight-bold">{{ selectedGroup.employees_count }}</div>
-                </v-sheet>
-             </v-col>
-            <v-col cols="6" sm="3">
-              <v-sheet class="pa-3 rounded text-center" color="success" variant="tonal">
-                <div class="text-caption">Прогресс</div>
-                <div class="text-h5 font-weight-bold">{{ formatProgress(selectedGroup.average_progress) }}%</div>
-              </v-sheet>
-            </v-col>
-            <v-col cols="6" sm="3">
-              <v-sheet class="pa-3 rounded text-center" color="warning" variant="tonal">
-                <div class="text-caption">Цена за чел.</div>
-                <div class="text-h5 font-weight-bold">{{ formatCurrency(selectedGroup.price_at_creation) }}</div>
-              </v-sheet>
-            </v-col>
-            <v-col cols="6" sm="3">
-              <v-sheet class="pa-3 rounded text-center" color="info" variant="tonal">
-                <div class="text-caption">Стоимость группы</div>
-                <div class="text-h5 font-weight-bold">{{ formatCurrency(selectedGroup.total_cost) }}</div>
-              </v-sheet>
-            </v-col>
-          </v-row>
-
-             -->
-
+            <!-- Блок статистики -->
             <!-- Карточки метрик -->
             <v-row v-if="statsLoading" class="mb-4">
               <v-col cols="12">
