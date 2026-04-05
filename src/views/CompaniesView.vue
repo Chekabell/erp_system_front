@@ -173,7 +173,36 @@
         </v-card-subtitle>
         <v-divider class="my-2" />
           <v-card-text class="pa-4">
-            <!-- 📊 Блок статистики -->
+            <!-- 📊 Блок статистики
+             <v-row class="mb-4" dense>
+              <v-col cols="6" sm="3">
+                <v-sheet class="pa-3 rounded text-center" color="primary" variant="tonal">
+                  <div class="text-caption">Участников</div>
+                  <div class="text-h5 font-weight-bold">{{ selectedGroup.employees_count }}</div>
+                </v-sheet>
+             </v-col>
+            <v-col cols="6" sm="3">
+              <v-sheet class="pa-3 rounded text-center" color="success" variant="tonal">
+                <div class="text-caption">Прогресс</div>
+                <div class="text-h5 font-weight-bold">{{ formatProgress(selectedGroup.average_progress) }}%</div>
+              </v-sheet>
+            </v-col>
+            <v-col cols="6" sm="3">
+              <v-sheet class="pa-3 rounded text-center" color="warning" variant="tonal">
+                <div class="text-caption">Цена за чел.</div>
+                <div class="text-h5 font-weight-bold">{{ formatCurrency(selectedGroup.price_at_creation) }}</div>
+              </v-sheet>
+            </v-col>
+            <v-col cols="6" sm="3">
+              <v-sheet class="pa-3 rounded text-center" color="info" variant="tonal">
+                <div class="text-caption">Стоимость группы</div>
+                <div class="text-h5 font-weight-bold">{{ formatCurrency(selectedGroup.total_cost) }}</div>
+              </v-sheet>
+            </v-col>
+          </v-row>
+
+             -->
+
             <!-- Карточки метрик -->
             <v-row v-if="statsLoading" class="mb-4">
               <v-col cols="12">
@@ -185,48 +214,38 @@
 
             <v-row v-else-if="companyStats" class="mb-4">
               <!-- Средний прогресс -->
-              <v-col cols="6" md="3">
-                <v-card variant="outlined" class="text-center pa-3 h-100" elevation="0">
-                  <v-icon color="primary" size="32" class="mb-2">mdi-progress-check</v-icon>
-                  <div class="text-h4 font-weight-bold text-primary">
-                    {{ companyStats.average_progress }}%
-                  </div>
-                  <div class="text-caption text-medium-emphasis">Средний прогресс</div>
-                </v-card>
+              <v-col cols="6" sm="3">
+                <v-sheet class="pa-3 rounded text-center" color="primary" variant="tonal">
+                  <div class="text-caption">Средний прогресс</div>
+                  <div class="text-h5 font-weight-bold">{{ companyStats.average_progress }}%</div>
+                </v-sheet>
               </v-col>
 
               <!-- Подписавшие сотрудники -->
-              <v-col cols="6" md="3">
-                <v-card variant="outlined" class="text-center pa-3 h-100" elevation="0">
-                  <v-icon color="success" size="32" class="mb-2">mdi-account-check</v-icon>
-                  <div class="text-h4 font-weight-bold text-success">
-                    {{ companyStats.employees_signed }}
-                  </div>
-                  <div class="text-caption text-medium-emphasis">Сотрудников подписало</div>
-                </v-card>
+              <v-col cols="6" sm="3">
+                <v-sheet class="pa-3 rounded text-center" color="success" variant="tonal">
+                  <div class="text-caption">Обучающихся сотрудников</div>
+                  <div class="text-h5 font-weight-bold">{{ companyStats.employees_signed }}</div>
+                </v-sheet>
               </v-col>
 
               <!-- Количество спецификаций -->
-              <v-col cols="6" md="3">
-                <v-card variant="outlined" class="text-center pa-3 h-100" elevation="0">
-                  <v-icon color="info" size="32" class="mb-2">mdi-file-document-multiple</v-icon>
-                  <div class="text-h4 font-weight-bold text-info">
-                    {{ companyStats.specifications_count }}
-                  </div>
-                  <div class="text-caption text-medium-emphasis">Спецификаций</div>
-                </v-card>
+              <v-col cols="6" sm="3">
+                <v-sheet class="pa-3 rounded text-center" color="warning" variant="tonal">
+                  <div class="text-caption">Создано спецификаций</div>
+                  <div class="text-h5 font-weight-bold">{{ companyStats.specifications_count}}</div>
+                </v-sheet>
               </v-col>
 
+
               <!-- Потраченный бюджет -->
-              <v-col cols="6" md="3">
-                <v-card variant="outlined" class="text-center pa-3 h-100" elevation="0">
-                  <v-icon color="warning" size="32" class="mb-2">mdi-currency-rub</v-icon>
-                  <div class="text-h5 font-weight-bold text-warning">
-                    {{ formatCurrency(companyStats.total_budget_spent) }}
-                  </div>
-                  <div class="text-caption text-medium-emphasis">Потрачено</div>
-                </v-card>
+              <v-col cols="6" sm="3">
+                <v-sheet class="pa-3 rounded text-center" color="info" variant="tonal">
+                  <div class="text-caption">Всего расходов </div>
+                  <div class="text-h5 font-weight-bold">{{ formatCurrency(companyStats.total_budget_spent) }}</div>
+                </v-sheet>
               </v-col>
+
             </v-row>
 
             <!-- Привязанные спецификации -->
