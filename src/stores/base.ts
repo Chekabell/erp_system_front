@@ -8,7 +8,7 @@ export interface PaginationMeta {
   next: string | null
   previous: string | null
   page: number
-  pageSize: number
+  per_page: number
 }
 
 export interface StoreState<T> {
@@ -29,7 +29,7 @@ export function createEntityStore<T> (endpoint: string) {
       next: null,
       previous: null,
       page: 1,
-      pageSize: 10,
+      per_page: 10,
     },
     isFetched: false,
   })
@@ -53,10 +53,10 @@ export function createEntityStore<T> (endpoint: string) {
     try {
       const requestParams = {
         page: state.pagination.page,
-        page_size: state.pagination.pageSize,
+        per_page: state.pagination.per_page,
         ...params,
       }
-      // Удаляем undefined/null значения
+
       for (const k of Object.keys(requestParams)) {
         if (requestParams[k] == null) {
           delete requestParams[k]
@@ -66,10 +66,10 @@ export function createEntityStore<T> (endpoint: string) {
       const response = await api.get<PaginatedResponse<T>>(endpoint, { params: requestParams })
 
       state.items = response.data.results
+      console.log(response.data)
       state.pagination.count = response.data.count
       state.pagination.next = response.data.next
       state.pagination.previous = response.data.previous
-      state.pagination.page = requestParams.page || 1
       state.isFetched = true
     } catch (error: any) {
       state.error = error.response?.data?.detail || 'Ошибка загрузки данных'
@@ -80,14 +80,12 @@ export function createEntityStore<T> (endpoint: string) {
   }
 
   const changePageSize = (size: number) => {
-    state.pagination.pageSize = size
+    state.pagination.per_page = size
     state.pagination.page = 1
-    state.isFetched = false
-    fetch()
   }
 
   const goToPage = (page: number) => {
-    if (page < 1 || page > Math.ceil(state.pagination.count / state.pagination.pageSize)) {
+    if (page < 1 || page > Math.ceil(state.pagination.count / state.pagination.per_page)) {
       return
     }
     state.pagination.page = page
