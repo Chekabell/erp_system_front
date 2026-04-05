@@ -56,9 +56,17 @@
           <v-chip class="font-weight-bold" size="small" variant="outlined">{{ item.groups.length }}</v-chip>
         </template>
         <!-- Суммы -->
-        <template #item.subtotal="{ item }"><div class="text-right font-weight-medium">{{ formatCurrency(item.total_no_vat) }}</div></template>
-        <template #item.vat="{ item }"><div class="text-right text-medium-emphasis">{{ formatCurrency(item.vat_amount) }}</div></template>
-        <template #item.total="{ item }"><div class="text-right font-weight-bold text-success">{{ formatCurrency(item.total_with_vat) }}</div></template>
+        <template #item.subtotal="{ item }">
+          <div class="text-right font-weight-medium">{{ formatCurrency(item.total_no_vat) }}</div>
+        </template>
+
+        <template #item.vat="{ item }">
+          <div class="text-right font-weight-medium">{{ formatCurrency(item.vat_amount) }}</div>
+        </template>
+
+        <template #item.total="{ item }">
+          <div class="text-right font-weight-medium">{{ formatCurrency(item.total_with_vat) }}</div>
+        </template>
         <!-- Действия -->
         <template #item.actions="{ item }">
           <v-btn
