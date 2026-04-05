@@ -272,7 +272,7 @@
             </v-autocomplete>
 
             <!-- Real-time Cost Calculation -->
-            <v-alert class="mt-4" type="info" variant="tonal">
+            <v-alert class="mt-4" type="info" variant="tonal" color="green-accent-4">
               <template #title>💰 Расчет стоимости</template>
               <div class="text-body-2">
                 <div>Цена за человека: <strong>{{ formatCurrency(coursePrice) }}</strong></div>
