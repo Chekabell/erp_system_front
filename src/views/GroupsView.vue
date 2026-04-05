@@ -320,7 +320,7 @@
             <v-col cols="6" sm="3">
               <v-sheet class="pa-3 rounded text-center" color="success" variant="tonal">
                 <div class="text-caption">Прогресс</div>
-                <div class="text-h5 font-weight-bold">{{ selectedGroup.average_progress }}%</div>
+                <div class="text-h5 font-weight-bold">{{ formatProgress(selectedGroup.average_progress) }}%</div>
               </v-sheet>
             </v-col>
             <v-col cols="6" sm="3">
@@ -356,15 +356,21 @@
                   <div class="d-flex align-center ga-2">
                     <v-slider
                       v-model="emp.progress_percent"
+                      color="primary"
                       hide-details
-                      :max="100"
-                      :min="0"
+                      density="compact"
+                      min="0"
+                      max="100"
+                      step="1"
                       style="width: 100px;"
-                      thumb-label
                       @end="updateEmployeeProgress(emp.id, emp.progress_percent)"
-                    />
-                    <span class="text-caption font-weight-bold">{{ emp.progress_percent }}%</span>
-                  </div>
+                    ></v-slider>
+                    
+                    <span class="text-caption font-weight-bold" style="min-width: 35px;">
+                      {{ formatProgress(emp.progress_percent) }}%
+                    </span>
+                    
+                    </div>
                 </td>
                 <td class="text-center">
                   <v-btn
@@ -519,6 +525,12 @@ import api from '@/api/client'
     if (!dateStr) return '--'
     const [y, m, d] = dateStr.split('-')
     return `${d}.${m}.${y}`
+  }
+  function formatProgress(value: number | string | null | undefined): number {
+    if (value === null || value === undefined || isNaN(Number(value))) {
+      return 0
+    }
+    return Math.round(Number(value))
   }
   function formatCurrency (value: string | number): string {
     const num = typeof value === 'string' ? Number.parseFloat(value) : value
