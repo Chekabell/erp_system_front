@@ -190,7 +190,7 @@
               :rules="[v => !!v || 'Выберите компанию']"
               variant="outlined"
             />
-            <v-alert class="mt-2" density="compact" type="info" variant="tonal">
+            <v-alert class="mt-2" density="compact" type="info" variant="tonal" color="green-accent-4">
               <template #title>💡 Подсказка</template>
               <span class="text-caption">После создания спецификации вы сможете добавить в неё учебные группы через страницу "Группы".</span>
             </v-alert>
