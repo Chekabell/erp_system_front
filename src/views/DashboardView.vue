@@ -52,9 +52,13 @@
       </v-col>
     </v-row>
 
-    <!-- 📅 Центральная зона -->
-    <v-row v-if="ganttChartStore.state.data != null">
-      <gantt-chart :groups="ganttChartStore.state.data.groups" />
+    <!-- 📅 Центральная зона – диаграмма Ганта -->
+    <v-row v-if="ganttChartStore.state.data">
+      <gantt-chart
+        :groups="ganttChartStore.state.data.groups"
+        @group-updated="refreshGroupData"
+        @navigate-to-group="goToGroupPage"
+      />
     </v-row>
   </v-container>
 </template>
@@ -62,6 +66,7 @@
 <script setup lang="ts">
   import type { Stats } from '@/types/api'
   import { onMounted, ref } from 'vue'
+  import { useRouter } from 'vue-router'
   import api from '@/api/client'
   import GanttChart from '@/components/GanttChart.vue'
   import OfficialSuitIcon from '@/icons/OfficialSuitIcon.vue'
@@ -70,18 +75,35 @@
   import RubleIcon from '@/icons/RubleIcon.vue'
   import { useGantt } from '@/stores/ganttChartStore'
 
+  const router = useRouter()
   const ganttChartStore = useGantt()
   const stats = ref<Stats>()
 
-  // 🔄 Инициализация данных
+  // Загрузка данных для диаграммы и статистики
+  async function loadGroups () {
+    await ganttChartStore.fetch()
+    // Обновляем статистику (количество активных групп, сотрудников и т.д.)
+    const statsResponse = await api.get<Stats>('/api/stats/')
+    stats.value = statsResponse.data
+  }
+
+  // Вызывается после изменения состава группы (добавление/удаление сотрудников)
+  async function refreshGroupData () {
+    // Перезагружаем данные диаграммы и статистики
+    await loadGroups()
+  }
+
+  // Переход на страницу редактирования группы (для изменения дат и т.п.)
+  function goToGroupPage (groupId: number) {
+    router.push({ path: '/groups', query: { openGroup: groupId.toString() } })
+  }
+
   onMounted(async () => {
-    if (!ganttChartStore.state.data) await ganttChartStore.fetch()
-    stats.value = (await api.get<Stats>('/api/stats/')).data
+    await loadGroups()
   })
 </script>
 
 <style scoped>
-/* Плавная анимация для карточек при загрузке */
 .v-skeleton-loader {
   border-radius: 12px;
 }

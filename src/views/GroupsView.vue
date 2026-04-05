@@ -357,20 +357,20 @@
                     <v-slider
                       v-model="emp.progress_percent"
                       color="primary"
-                      hide-details
                       density="compact"
-                      min="0"
+                      hide-details
                       max="100"
+                      min="0"
                       step="1"
                       style="width: 100px;"
                       @end="updateEmployeeProgress(emp.id, emp.progress_percent)"
-                    ></v-slider>
-                    
+                    />
+
                     <span class="text-caption font-weight-bold" style="min-width: 35px;">
                       {{ formatProgress(emp.progress_percent) }}%
                     </span>
-                    
-                    </div>
+
+                  </div>
                 </td>
                 <td class="text-center">
                   <v-btn
@@ -436,14 +436,43 @@
 </template>
 
 <script setup lang="ts">
+
   import type { GroupRequest, GroupResponse, SimpleEmployeeResponse } from '@/types/api'
   import { computed, onMounted, ref, watch } from 'vue'
+  import { useRoute } from 'vue-router'
+  import api from '@/api/client'
   import { coursesStore } from '@/stores/coursesStore'
   import { employeesStore } from '@/stores/employeesStore'
   import { useGroupEmployees } from '@/stores/groupEmployeesStore'
   import { groupsStore } from '@/stores/groupsStore'
   import { specificationsStore } from '@/stores/specificationsStore'
-import api from '@/api/client'
+
+  const route = useRoute()
+
+  // Функция для открытия модального окна деталей (у вас уже есть openDetailModal)
+  // Если её нет – создайте (она принимает GroupResponse)
+
+  // Открытие по query-параметру
+  watch(
+    () => route.query.openGroup,
+    async groupIdStr => {
+      if (!groupIdStr) return
+      const groupId = Number(groupIdStr)
+      if (isNaN(groupId)) return
+
+      // Ждём загрузки списка групп, если ещё не загружен
+      if (!groupsStore.state.isFetched) {
+        await groupsStore.fetch()
+      }
+      const group = groupsStore.state.items.find(g => g.id === groupId)
+      if (group) {
+        await openDetailModal(group) // ваша существующая функция
+        // Убираем параметр из URL, чтобы при повторном открытии сработало снова
+        router.replace({ query: { ...route.query, openGroup: undefined } })
+      }
+    },
+    { immediate: true },
+  )
 
   // Search & Filters
   const search = ref('')
@@ -526,7 +555,7 @@ import api from '@/api/client'
     const [y, m, d] = dateStr.split('-')
     return `${d}.${m}.${y}`
   }
-  function formatProgress(value: number | string | null | undefined): number {
+  function formatProgress (value: number | string | null | undefined): number {
     if (value === null || value === undefined || isNaN(Number(value))) {
       return 0
     }
@@ -564,7 +593,7 @@ import api from '@/api/client'
       end_date: group.end_date,
       status: group.status || 'planned',
       total_cost: calculatedCost.value.toFixed(2),
-      employee_ids: selectedEmployeeIds.value
+      employee_ids: selectedEmployeeIds.value,
     }
     selectedEmployeeIds.value = group.employee_ids || []
     coursePrice.value = Number.parseFloat(group.course.base_price)
@@ -582,13 +611,9 @@ import api from '@/api/client'
         end_date: formData.value.end_date,
         status: formData.value.status,
         total_cost: calculatedCost.value.toFixed(2),
-        employee_ids: selectedEmployeeIds.value
+        employee_ids: selectedEmployeeIds.value,
       }
-      if (isEditing.value && formData.value.id) {
-        await groupsStore.update(formData.value.id, payload)
-      } else {
-        await groupsStore.create(payload)
-      }
+      await (isEditing.value && formData.value.id ? groupsStore.update(formData.value.id, payload) : groupsStore.create(payload))
       formDialog.value = false
       groupsStore.fetch() // Refresh list
     } catch (error) {
@@ -602,10 +627,10 @@ import api from '@/api/client'
   async function openDetailModal (group: GroupResponse) {
     selectedGroup.value = group
     detailDialog.value = true
-    
+
     const { state, fetch } = useGroupEmployees(group.id)
-    await fetch() 
-    
+    await fetch()
+
     if (state.data) {
       groupEmployees.value = state.data.employees
     }
