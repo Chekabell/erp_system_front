@@ -105,8 +105,9 @@
 </template>
 
 <script setup lang="ts">
-  import type { SimpleGroupResponse } from '@/types/api'
+  import type { SimpleEmployeeResponse, SimpleGroupResponse } from '@/types/api'
   import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+  import api from '@/api/client'
 
   const props = defineProps<{ groups: SimpleGroupResponse[] }>()
 
