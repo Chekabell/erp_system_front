@@ -108,7 +108,7 @@
               rounded
               style="width: 80px;"
             />
-            <span class="text-caption">{{ item.average_progress }}%</span>
+            <span class="text-caption">{{ formatProgress(item.average_progress) }}%</span>
           </div>
         </template>
 
@@ -615,10 +615,12 @@ import api from '@/api/client'
   async function updateEmployeeProgress (employeeId: number, progress: number) {
     if (!selectedGroup.value) return
     try {
-      await api.patch(`/api/groups/${selectedGroup.value.id}/employee/${employeeId}/`, { progress_percent: progress })
+      const intProgress = formatProgress(progress)
+      await api.patch(`/api/groups/${selectedGroup.value.id}/employee/${employeeId}/`, { progress_percent: intProgress })
       // Refresh local state
-      const emp = groupEmployees.value.find(e => e.id === employeeId)
-      if (emp) emp.progress_percent = progress
+      const emp = groupEmployees.value.find(e => e.id === participantId)
+      if (emp) emp.progress_percent = intProgress
+      await groupsStore.fetch()
     } catch (error) {
       console.error('Ошибка обновления прогресса:', error)
     }
