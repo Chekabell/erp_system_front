@@ -1,6 +1,6 @@
 <template>
   <v-container class="pa-6" fluid>
-    <!-- 🔹 Header -->
+    <!-- Заголовок -->
     <v-row align="center">
       <v-col>
         <h1 class="text-h4 font-weight-semibold" style="font-size: 40px;">Сотрудники</h1>
@@ -8,13 +8,92 @@
     </v-row>
 
     <v-divider class="my-6" />
-    <!-- 🔹 Loading / Error -->
+
+    <!-- Кнопки действий -->
+    <v-row align="center" class="mb-6" gap="20">
+      <v-btn
+        color="primary"
+        prepend-icon="mdi-plus"
+        style="font-size: 22px;"
+        @click="openAddDialog"
+      >
+        Добавить сотрудника
+      </v-btn>
+      <v-btn
+        color="secondary"
+        prepend-icon="mdi-upload"
+        style="font-size: 22px;"
+        @click="triggerFileInput"
+      >
+        XML-импорт
+      </v-btn>
+      <input
+        ref="fileInput"
+        accept=".xml"
+        style="display: none"
+        type="file"
+        @change="handleFileImport"
+      >
+    </v-row>
+
+    <!-- Drag & Drop зона -->
+    <v-row class="mb-6">
+      <v-col cols="12">
+        <v-card
+          class="drop-zone pa-4 text-center"
+          :class="{ 'drop-zone-active': isDragging }"
+          @dragleave.prevent="isDragging = false"
+          @dragover.prevent="isDragging = true"
+          @drop.prevent="handleDrop"
+        >
+          <v-icon color="grey-darken-1" size="48">mdi-file-xml-box</v-icon>
+          <div class="text-body-1 mt-2">
+            Перетащите XML-файл с сотрудниками сюда или <strong>нажмите для выбора</strong>
+          </div>
+          <div class="text-caption text-grey">
+            Формат: &lt;employees&gt;&lt;employee&gt;&lt;full_name&gt;...&lt;/full_name&gt;&lt;email&gt;...&lt;/email&gt;&lt;company_id&gt;...&lt;/company_id&gt;&lt;/employee&gt;...&lt;/employees&gt;
+          </div>
+        </v-card>
+      </v-col>
+    </v-row>
+
+    <!-- Поиск и фильтр -->
+    <v-row align="center" class="mb-4">
+      <v-col cols="12" md="6">
+        <v-text-field
+          v-model="searchQuery"
+          clearable
+          density="comfortable"
+          label="Поиск по ФИО или email"
+          prepend-inner-icon="mdi-magnify"
+          variant="outlined"
+          @update:model-value="onSearchChange"
+        />
+      </v-col>
+      <v-col cols="12" md="4">
+        <v-select
+          v-model="selectedCompanyId"
+          clearable
+          density="comfortable"
+          item-title="name"
+          item-value="id"
+          :items="companyOptions"
+          label="Фильтр по компании"
+          variant="outlined"
+          @update:model-value="onCompanyFilterChange"
+        />
+      </v-col>
+    </v-row>
+
+    <!-- Состояния загрузки и ошибок -->
     <div v-if="employeesStore.state.loading && !employeesStore.state.isFetched" class="d-flex justify-center mt-8">
       <v-progress-circular color="primary" indeterminate size="64" />
     </div>
-    <v-alert v-else-if="employeesStore.state.error" class="mt-4" type="error" variant="tonal">{{ employeesStore.state.error }}</v-alert>
+    <v-alert v-else-if="employeesStore.state.error" class="mt-4" type="error" variant="tonal">
+      {{ employeesStore.state.error }}
+    </v-alert>
 
-    <!-- Table -->
+    <!-- Таблица сотрудников -->
     <v-card v-else class="rounded-lg overflow-hidden" elevation="2">
       <v-data-table
         class="elevation-0"
@@ -22,7 +101,7 @@
         hide-default-footer
         hover
         :items="employeesStore.state.items"
-        no-data-text="Участники не найдены"
+        no-data-text="Сотрудники не найдены"
       >
         <template #item.full_name="{ item }">
           <div class="d-flex align-center ga-3">
@@ -36,7 +115,20 @@
           <div class="text-caption text-medium-emphasis">{{ item.company.name }}</div>
         </template>
         <template #item.actions="{ item }">
-          <v-btn color="primary" icon="mdi-pencil" size="small" variant="text" />
+          <v-btn
+            color="primary"
+            icon="mdi-pencil"
+            size="small"
+            variant="text"
+            @click="openEditDialog(item)"
+          />
+          <v-btn
+            color="error"
+            icon="mdi-delete"
+            size="small"
+            variant="text"
+            @click="confirmDelete(item)"
+          />
           <v-btn
             color="secondary"
             icon="mdi-eye"
@@ -44,22 +136,29 @@
             variant="text"
             @click="openDetail(item)"
           />
+          <v-btn
+            color="success"
+            icon="mdi-xml"
+            size="small"
+            variant="text"
+            @click="exportEmployeeToXML(item)"
+          />
         </template>
       </v-data-table>
 
-      <!-- Footer: Page Size & Pagination -->
+      <!-- Пагинация и выбор размера страницы -->
       <v-divider />
       <div class="d-flex justify-space-between align-center pa-3 bg-surface-variant">
         <div class="d-flex align-center ga-2">
           <span class="text-caption text-medium-emphasis">Показывать по:</span>
           <v-select
-            v-model="employeesStore.state.pagination.pageSize"
             density="compact"
             hide-details
             :items="[10, 20, 50, 100]"
+            :model-value="employeesStore.state.pagination.pageSize"
             style="width: 80px;"
             variant="outlined"
-            @update:model-value="employeesStore.changePageSize"
+            @update:model-value="onPageSizeChange"
           />
           <span class="text-caption text-medium-emphasis">из {{ employeesStore.state.pagination.count }}</span>
         </div>
@@ -69,61 +168,365 @@
           :length="totalPages"
           :model-value="employeesStore.state.pagination.page"
           size="small"
-          @update:model-value="employeesStore.goToPage"
+          @update:model-value="onPageChange"
         />
       </div>
     </v-card>
 
-    <!-- 🔹 Modal: Просмотр участника -->
-    <v-dialog v-model="dialog" max-width="600">
+    <!-- Диалог добавления/редактирования -->
+    <v-dialog v-model="dialogVisible" max-width="600px">
+      <v-card>
+        <v-card-title class="text-h5 font-weight-bold pt-4">
+          {{ editingEmployee ? 'Редактировать сотрудника' : 'Добавить сотрудника' }}
+        </v-card-title>
+        <v-card-text class="pa-4">
+          <v-form ref="formRef" v-model="formValid">
+            <v-text-field
+              v-model="formData.full_name"
+              label="ФИО"
+              required
+              :rules="[requiredRule]"
+            />
+            <v-text-field
+              v-model="formData.email"
+              label="Email"
+              required
+              :rules="[requiredRule, emailRule]"
+            />
+            <v-select
+              v-model="formData.company_id"
+              item-title="name"
+              item-value="id"
+              :items="companies"
+              label="Компания"
+              required
+              :rules="[requiredRule]"
+            />
+          </v-form>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="dialogVisible = false">Отмена</v-btn>
+          <v-btn color="primary" :disabled="!formValid" @click="saveEmployee">
+            Сохранить
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Диалог просмотра деталей -->
+    <v-dialog v-model="detailDialogVisible" max-width="600">
       <v-card v-if="selectedEmployee">
         <v-card-title class="text-h5 font-weight-bold pt-4 d-flex align-center ga-3">
-          <v-avatar class="text-white" :color="getAvatarColor(selectedEmployee.full_name)" size="48">{{ getInitials(selectedEmployee.full_name) }}</v-avatar>
-          <div>{{ selectedEmployee.full_name }}<div class="text-caption font-weight-regular text-medium-emphasis">{{ selectedEmployee.email }}</div></div>
+          <v-avatar class="text-white" :color="getAvatarColor(selectedEmployee.full_name)" size="48">
+            {{ getInitials(selectedEmployee.full_name) }}
+          </v-avatar>
+          <div>
+            {{ selectedEmployee.full_name }}
+            <div class="text-caption font-weight-regular text-medium-emphasis">{{ selectedEmployee.email }}</div>
+          </div>
         </v-card-title>
         <v-divider class="my-2" />
         <v-card-text class="pa-4">
           <v-list density="compact">
-            <v-list-item prepend-icon="mdi-domain"><template #title>Компания</template><template #subtitle>{{ selectedEmployee.company?.name }}</template></v-list-item>
+            <v-list-item prepend-icon="mdi-domain">
+              <template #title>Компания</template>
+              <template #subtitle>{{ selectedEmployee.company?.name }}</template>
+            </v-list-item>
             <v-list-item prepend-icon="mdi-account-group-outline">
               <template #title>Группы</template>
               <template #subtitle>{{ selectedEmployee.groups?.map(g => g.course_title).join(', ') || 'Нет активных групп' }}</template>
             </v-list-item>
           </v-list>
         </v-card-text>
-        <v-card-actions><v-spacer /><v-btn variant="text" @click="dialog = false">Закрыть</v-btn></v-card-actions>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="detailDialogVisible = false">Закрыть</v-btn>
+        </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <!-- Диалог подтверждения удаления -->
+    <v-dialog v-model="deleteDialogVisible" max-width="400px">
+      <v-card>
+        <v-card-title class="text-h6">Подтверждение удаления</v-card-title>
+        <v-card-text>
+          Вы уверены, что хотите удалить сотрудника <strong>{{ employeeToDelete?.full_name }}</strong>?
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="deleteDialogVisible = false">Отмена</v-btn>
+          <v-btn color="error" @click="deleteEmployee">Удалить</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Уведомления -->
+    <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
+      {{ snackbar.message }}
+    </v-snackbar>
   </v-container>
 </template>
 
 <script setup lang="ts">
-  import type { EmployeeResponse } from '@/types/api'
+  import type { CompanyResponse, EmployeeResponse } from '@/types/api'
   import { computed, onMounted, ref } from 'vue'
-  import { employeesStore } from '@/stores/employeesStore'
+  import api from '@/api/client'
+  import { useXml } from '@/composables/useXml'
+  import { employeesApi, employeesStore } from '@/stores/employeesStore'
 
-  // 🔍 Поиск и пагинация
-  const search = ref('')
-  const totalPages = computed(() => Math.ceil(employeesStore.state.pagination.count / employeesStore.state.pagination.pageSize) || 1)
+  const { upload: uploadXml, exportXml } = useXml()
 
+  // Состояние
+  const searchQuery = ref('')
+  const selectedCompanyId = ref<number | null>(null)
+  const dialogVisible = ref(false)
+  const detailDialogVisible = ref(false)
+  const deleteDialogVisible = ref(false)
+  const editingEmployee = ref<EmployeeResponse | null>(null)
+  const selectedEmployee = ref<EmployeeResponse | null>(null)
+  const employeeToDelete = ref<EmployeeResponse | null>(null)
+  const formValid = ref(false)
+  const formRef = ref<any>(null)
+  const isDragging = ref(false)
+  const fileInput = ref<HTMLInputElement | null>(null)
+
+  // Список компаний (всегда массив)
+  const companies = ref<CompanyResponse[]>([])
+  const companyOptions = computed(() => companies.value)
+
+  // Форма
+  const formData = ref({
+    full_name: '',
+    email: '',
+    company_id: null as number | null,
+  })
+
+  // Уведомления
+  const snackbar = ref({
+    show: false,
+    message: '',
+    color: 'success',
+  })
+
+  // Заголовки таблицы
   const headers = [
-    { title: 'ФИО', key: 'full_name', width: 300 },
-    { title: 'Email', key: 'email', sortable: false },
-    { title: 'Компания', key: 'company', sortable: false, width: 120, align: 'center' },
-    { title: '', key: 'actions', sortable: false, width: 100, align: 'end' },
+    { title: 'ФИО', key: 'full_name', width: 300, align: 'start' },
+    { title: 'Email', key: 'email', sortable: false, align: 'start' },
+    { title: 'Компания', key: 'company', sortable: false, width: 300, align: 'start' },
+    { title: 'Действия', key: 'actions', sortable: false, width: 160, align: 'end' },
   ]
 
-  function handleSearch () {
-    employeesStore.reset()
-    employeesStore.fetch({ search: search.value || undefined })
-  }
-  function openDetail (item: EmployeeResponse) {
-    selectedEmployee.value = item; dialog.value = true
+  // Пагинация
+  const totalPages = computed(() => Math.ceil(employeesStore.state.pagination.count / employeesStore.state.pagination.pageSize) || 1)
+
+  // Валидация
+  const requiredRule = (v: string) => !!v || 'Поле обязательно'
+  const emailRule = (v: string) => /.+@.+\..+/.test(v) || 'Введите корректный email'
+
+  // Вспомогательные функции
+  function showSnackbar (message: string, color = 'success') {
+    snackbar.value = { show: true, message, color }
   }
 
-  onMounted(() => employeesStore.fetch())
+  function getInitials (fullName: string) {
+    return fullName.split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2)
+  }
+
+  function getAvatarColor (fullName: string) {
+    const colors = ['primary', 'secondary', 'success', 'info', 'warning', 'error']
+    return colors[fullName.length % colors.length]
+  }
+
+  // Загрузка компаний с защитой от не-массива
+  async function loadCompanies () {
+    try {
+      const response = await api.get('/api/companies/')
+      let data: CompanyResponse[] = []
+      if (Array.isArray(response.data)) {
+        data = response.data
+      } else if (response.data?.results && Array.isArray(response.data.results)) {
+        data = response.data.results
+      } else {
+        console.warn('Неожиданный формат ответа компаний:', response.data)
+      }
+      companies.value = data
+    } catch (error) {
+      console.error('Ошибка загрузки компаний:', error)
+      companies.value = []
+      showSnackbar('Не удалось загрузить список компаний', 'error')
+    }
+  }
+
+  // Загрузка сотрудников с фильтрами
+  async function loadEmployees () {
+    const params: Record<string, any> = {}
+    if (searchQuery.value) params.search = searchQuery.value
+    if (selectedCompanyId.value) params.company_id = selectedCompanyId.value
+    await employeesStore.fetch(params, true)
+  }
+
+  // Дебаунс поиска
+  let searchTimeout: ReturnType<typeof setTimeout>
+  function onSearchChange () {
+    clearTimeout(searchTimeout)
+    searchTimeout = setTimeout(() => {
+      employeesStore.state.pagination.page = 1
+      loadEmployees()
+    }, 300)
+  }
+
+  function onCompanyFilterChange () {
+    employeesStore.state.pagination.page = 1
+    loadEmployees()
+  }
+
+  // Пагинация
+  function onPageChange (page: number) {
+    employeesStore.goToPage(page)
+    loadEmployees()
+  }
+
+  function onPageSizeChange (size: number) {
+    employeesStore.changePageSize(size)
+    loadEmployees()
+  }
+
+  // CRUD
+  function openAddDialog () {
+    editingEmployee.value = null
+    formData.value = { full_name: '', email: '', company_id: null }
+    dialogVisible.value = true
+  }
+
+  function openEditDialog (employee: EmployeeResponse) {
+    editingEmployee.value = employee
+    formData.value = {
+      full_name: employee.full_name,
+      email: employee.email,
+      company_id: employee.company.id,
+    }
+    dialogVisible.value = true
+  }
+
+  async function saveEmployee () {
+    const { valid } = await formRef.value.validate()
+    if (!valid) return
+    try {
+      if (editingEmployee.value) {
+        await employeesApi.update(editingEmployee.value.id, {
+          full_name: formData.value.full_name,
+          email: formData.value.email,
+          company_id: formData.value.company_id!,
+          assign_to_groups: [],
+        })
+        showSnackbar('Сотрудник обновлён')
+      } else {
+        await employeesApi.create({
+          full_name: formData.value.full_name,
+          email: formData.value.email,
+          company_id: formData.value.company_id!,
+          assign_to_groups: [],
+        })
+        showSnackbar('Сотрудник добавлен')
+      }
+      dialogVisible.value = false
+      await loadEmployees()
+    } catch (error: any) {
+      const message = error.response?.data?.detail || 'Ошибка сохранения'
+      showSnackbar(message, 'error')
+    }
+  }
+
+  function confirmDelete (employee: EmployeeResponse) {
+    employeeToDelete.value = employee
+    deleteDialogVisible.value = true
+  }
+
+  async function deleteEmployee () {
+    if (!employeeToDelete.value) return
+    try {
+      await employeesApi.remove(employeeToDelete.value.id)
+      showSnackbar('Сотрудник удалён')
+      deleteDialogVisible.value = false
+      await loadEmployees()
+    } catch (error: any) {
+      const message = error.response?.data?.detail || 'Ошибка удаления'
+      showSnackbar(message, 'error')
+    }
+  }
+
+  function openDetail (employee: EmployeeResponse) {
+    selectedEmployee.value = employee
+    detailDialogVisible.value = true
+  }
+
+  // XML экспорт
+  async function exportEmployeeToXML (employee: EmployeeResponse) {
+    try {
+      await exportXml('employee', employee.id)
+      showSnackbar('XML экспортирован')
+    } catch {
+      showSnackbar('Ошибка экспорта XML', 'error')
+    }
+  }
+
+  // XML импорт с drag & drop
+  const triggerFileInput = () => fileInput.value?.click()
+
+  async function handleFileImport (event: Event) {
+    const input = event.target as HTMLInputElement
+    if (input.files?.[0]) await processXmlFile(input.files[0])
+    input.value = ''
+  }
+
+  async function handleDrop (event: DragEvent) {
+    isDragging.value = false
+    const file = event.dataTransfer?.files?.[0]
+    if (file) await processXmlFile(file)
+  }
+
+  async function processXmlFile (file: File) {
+    if (!file.name.endsWith('.xml')) {
+      showSnackbar('Загрузите XML-файл', 'error')
+      return
+    }
+    try {
+      await uploadXml(file)
+      showSnackbar('XML импортирован')
+      await loadEmployees()
+    } catch (error: any) {
+      const message = error.response?.data?.error || 'Ошибка импорта XML'
+      showSnackbar(message, 'error')
+    }
+  }
+
+  // Старт
+  onMounted(async () => {
+    await Promise.all([loadCompanies(), loadEmployees()])
+  })
 </script>
 
 <style scoped>
-.v-data-table__wrapper { transition: opacity 0.2s ease; }
+.drop-zone {
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: #fafafa;
+}
+
+.drop-zone:hover {
+  border-color: #1976d2;
+  background-color: #f0f7ff;
+}
+
+.drop-zone-active {
+  border-color: #1976d2;
+  background-color: #e3f2fd;
+}
+
+.v-data-table__wrapper {
+  transition: opacity 0.2s ease;
+}
 </style>
