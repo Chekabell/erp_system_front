@@ -107,6 +107,7 @@ export interface CompanyResponse {
   code: string
   name: string
   specifications: Array<SimpleSpecificationResponse>
+  employees?: Array<SimpleEmployeeResponse>
 }
 
 export type SimpleCompanyResponse = Omit<CompanyResponse, 'id'>
