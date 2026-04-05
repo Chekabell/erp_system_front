@@ -92,7 +92,7 @@
           <div class="text-caption">{{ item.description }}</div>
         </template>
         <template #item.duration_days="{ item }">
-          <v-chip color="info" size="small">{{ item.duration_days }} дн.</v-chip>
+          <v-chip color="green-accent-4" size="small">{{ item.duration_days }} дн.</v-chip>
         </template>
         <template #item.base_price="{ item }">
           <div class="font-weight-medium">{{ Number(item.base_price).toLocaleString() }} ₽</div>
