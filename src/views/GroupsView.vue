@@ -146,8 +146,9 @@
       <v-divider />
       <div class="d-flex justify-space-between align-center pa-3 bg-surface-variant">
         <div class="d-flex align-center ga-2">
-          <span class="text-caption text-medium-emphasis">Показывать по:</span>
+          <span class="text-caption text-medium-emphasis text-white">Показывать по:</span>
           <v-select
+            class="text-white"
             density="compact"
             hide-details
             :items="[5, 10, 20]"
@@ -156,7 +157,7 @@
             variant="outlined"
             @update:model-value="onPageSizeChange"
           />
-          <span class="text-caption text-medium-emphasis">из {{ groupsStore.state.pagination.count }}</span>
+          <span class="text-caption text-medium-emphasis text-white">из {{ groupsStore.state.pagination.count }}</span>
         </div>
         <v-pagination
           v-if="totalPages > 1"
@@ -231,28 +232,7 @@
               label="Статус"
               variant="outlined"
             />
-            <v-autocomplete
-              v-model="selectedEmployeeIds"
-              chips
-              closable-chips
-              density="compact"
-              hint="Выберите сотрудников из списка"
-              item-title="full_name"
-              item-value="id"
-              :items="employeesStore.state.items"
-              label="Участники группы"
-              multiple
-              variant="outlined"
-            >
-              <template #item="{ props, item }">
-                <v-list-item v-bind="props">
-                  <template #subtitle>
-                    {{ item.raw?.company?.name ?? '—' }} • {{ item.raw?.email ?? '—' }}
-                  </template>
-                </v-list-item>
-              </template>
-            </v-autocomplete>
-            <v-alert class="mt-4" type="info" variant="tonal">
+            <v-alert class="mt-4" color="green-accent-4" type="info" variant="tonal">
               <template #title>💰 Расчёт стоимости</template>
               <div class="text-body-2">
                 <div>Цена за человека: <strong>{{ formatCurrency(coursePrice) }}</strong></div>
@@ -434,7 +414,6 @@
 <script setup lang="ts">
   import type { GroupRequest, GroupResponse, SimpleEmployeeResponse } from '@/types/api'
   import { computed, onMounted, ref, watch } from 'vue'
-  import { useRoute, useRouter } from 'vue-router'
   import api from '@/api/client'
   import { coursesStore } from '@/stores/coursesStore'
   import { employeesStore } from '@/stores/employeesStore'
@@ -442,8 +421,6 @@
   import { groupsStore } from '@/stores/groupsStore'
   import { specificationsStore } from '@/stores/specificationsStore'
 
-  const route = useRoute()
-  const router = useRouter()
   const ganttStore = useGantt()
 
   // ---------- Уведомления ----------

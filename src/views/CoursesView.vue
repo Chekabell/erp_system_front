@@ -3,7 +3,7 @@
     <!-- Заголовок -->
     <v-row align="center">
       <v-col>
-        <h1 class="text-h4 font-weight-semibold" style="font-size: 40px;">Учебные курсы</h1>
+        <h1 class="text-h4 font-weight-semibold" style="font-size: 40px;">Курсы обучения</h1>
       </v-col>
     </v-row>
 
@@ -40,26 +40,6 @@
           prepend-inner-icon="mdi-magnify"
           variant="outlined"
           @update:model-value="onSearchChange"
-        />
-      </v-col>
-      <v-col cols="12" md="4">
-        <v-text-field
-          v-model="minDuration"
-          density="comfortable"
-          label="Мин. длительность (дни)"
-          type="number"
-          variant="outlined"
-          @update:model-value="onFilterChange"
-        />
-      </v-col>
-      <v-col cols="12" md="2">
-        <v-text-field
-          v-model="maxPrice"
-          density="comfortable"
-          label="Макс. цена"
-          type="number"
-          variant="outlined"
-          @update:model-value="onFilterChange"
         />
       </v-col>
     </v-row>
@@ -229,9 +209,7 @@
             <div class="text-body-1 mt-2">
               Перетащите XML-файл с курсами сюда или <strong>нажмите для выбора</strong>
             </div>
-            <div class="text-caption text-grey mt-2">
-              Формат: &lt;courses&gt;&lt;course&gt;&lt;title&gt;...&lt;/title&gt;&lt;description&gt;...&lt;/description&gt;&lt;duration_days&gt;...&lt;/duration_days&gt;&lt;base_price&gt;...&lt;/base_price&gt;&lt;/course&gt;...&lt;/courses&gt;
-            </div>
+
             <input
               ref="fileInput"
               accept=".xml"
