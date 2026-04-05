@@ -112,11 +112,11 @@
           <v-select
             density="compact"
             hide-details
-            :items="[10, 20, 50, 100]"
-            :model-value="specificationsStore.state.pagination.pageSize"
+            :items="[5, 10, 20]"
+            :model-value="specificationsStore.state.pagination.per_page"
             style="width: 80px;"
             variant="outlined"
-            @update:model-value="specificationsStore.changePageSize"
+            @update:model-value="onPageSizeChange"
           />
           <span class="text-caption text-medium-emphasis text-white">из {{ specificationsStore.state.pagination.count }}</span>
         </div>
@@ -126,7 +126,7 @@
           :length="totalPages"
           :model-value="specificationsStore.state.pagination.page"
           size="small"
-          @update:model-value="specificationsStore.goToPage"
+          @update:model-value="onPageChange"
         />
       </div>
     </v-card>
@@ -211,7 +211,11 @@
 
   // 🔍 Поиск и пагинация
   const search = ref('')
-  const totalPages = computed(() => Math.ceil(specificationsStore.state.pagination.count / specificationsStore.state.pagination.pageSize) || 1)
+
+  // 👇 ВАЖНО: используем то же имя поля, что и в store (per_page или pageSize — проверьте ваш store!)
+  const totalPages = computed(() =>
+    Math.ceil(specificationsStore.state.pagination.count / specificationsStore.state.pagination.per_page) || 1
+  )
 
   // Уведомления
   const snackbar = ref({
@@ -234,18 +238,30 @@
     { title: 'Действия', key: 'actions', sortable: false, width: 140, align: 'end' },
   ]
 
-  function handleSearch () {
-    specificationsStore.reset()
-    specificationsStore.fetch({ search: search.value || undefined })
+  // 👇 Функция загрузки с параметрами
+  async function loadSpecifications () {
+    const params: Record<string, any> = {}
+    if (search.value) params.search = search.value
+    await specificationsStore.fetch(params, true)
   }
 
-  // 📖 Просмотр спецификации
-  const dialog = ref(false)
-  const selectedSpec = ref<SpecificationResponse | null>(null)
+  // 👇 Обработчик поиска (сброс на 1 страницу + дебаунс опционально)
+  function handleSearch () {
+    specificationsStore.state.pagination.page = 1
+    loadSpecifications()
+  }
 
-  function openDetail (spec: SpecificationResponse) {
-    selectedSpec.value = spec
-    dialog.value = true
+  // 👇 Обработчик изменения страницы (БЫЛ ОТСУТСТВУЕТ — это главная причина!)
+  function onPageChange (page: number) {
+    specificationsStore.goToPage(page)
+    loadSpecifications()
+  }
+
+  // 👇 Обработчик изменения размера страницы (БЫЛ ОТСУТСТВУЕТ!)
+  async function onPageSizeChange (size: number) {
+    specificationsStore.changePageSize(size)
+    specificationsStore.state.pagination.page = 1 // сброс на первую страницу при смене размера
+    await loadSpecifications()
   }
 
   // ➕ Создание спецификации
