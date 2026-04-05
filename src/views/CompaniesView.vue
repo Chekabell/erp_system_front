@@ -1,348 +1,485 @@
 <template>
   <v-container class="pa-6" fluid>
-    <!-- 🔹 Header -->
-    <v-card class="mb-6 pa-4 rounded-lg" elevation="2">
-      <div class="d-flex flex-wrap align-center justify-space-between ga-4">
-        <div>
-          <h1 class="text-h4 font-weight-bold mb-1">Компании-заказчики</h1>
-          <p class="text-body-2 text-medium-emphasis">Аналитика обучения и спецификаций в разрезе организаций</p>
-        </div>
-        <div class="d-flex ga-3" style="max-width: 600px; flex: 1;">
-          <v-text-field
-            v-model="search"
-            density="compact"
-            hide-details
-            label="Поиск по названию или коду..."
-            prepend-inner-icon="mdi-magnify"
-            variant="solo"
-            @keyup.enter="handleSearch"
-          />
-          <v-btn color="primary" :loading="companiesStore.state.loading" @click="handleSearch">Найти</v-btn>
-          <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreateDialog">Создать</v-btn>
-        </div>
-      </div>
-    </v-card>
+    <!-- Заголовок -->
+    <v-row align="center">
+      <v-col>
+        <h1 class="text-h4 font-weight-semibold" style="font-size: 40px;">Компании</h1>
+      </v-col>
+    </v-row>
 
-    <!-- 🔹 Loading / Error -->
+    <v-divider class="my-6" />
+
+    <!-- Кнопки действий -->
+    <v-row align="center" class="mb-6" gap="20">
+      <v-btn
+        color="primary"
+        prepend-icon="mdi-plus"
+        style="font-size: 22px;"
+        @click="openAddDialog"
+      >
+        Добавить компанию
+      </v-btn>
+    </v-row>
+
+    <!-- Поиск -->
+    <v-row align="center" class="mb-4">
+      <v-col cols="12" md="6">
+        <v-text-field
+          v-model="searchQuery"
+          clearable
+          density="comfortable"
+          label="Поиск по названию или коду"
+          prepend-inner-icon="mdi-magnify"
+          variant="outlined"
+          @update:model-value="onSearchChange"
+        />
+      </v-col>
+    </v-row>
+
+    <!-- Состояния загрузки и ошибок -->
     <div v-if="companiesStore.state.loading && !companiesStore.state.isFetched" class="d-flex justify-center mt-8">
       <v-progress-circular color="primary" indeterminate size="64" />
     </div>
     <v-alert v-else-if="companiesStore.state.error" class="mt-4" type="error" variant="tonal">
       {{ companiesStore.state.error }}
-      <v-btn class="ml-2" color="error" variant="text" @click="companiesStore.fetch({}, true)">Повторить</v-btn>
     </v-alert>
 
-    <!-- 🔹 Grid -->
-    <v-row v-else dense>
-      <v-col
-        v-for="company in companiesStore.state.items"
-        :key="company.id"
-        cols="12"
-        lg="4"
-        sm="6"
-        xl="3"
+    <!-- Таблица компаний -->
+    <v-card v-else class="rounded-lg overflow-hidden" elevation="2">
+      <v-data-table
+        class="elevation-0"
+        disable-pagination
+        :headers="headers"
+        hide-default-footer
+        hover
+        item-key="id"
+        :items="companiesStore.state.items"
+        :items-per-page="companiesStore.state.pagination.per_page"
+        no-data-text="Компании не найдены"
       >
-        <!-- Добавил cursor-pointer явно -->
-        <v-card class="rounded-lg overflow-hidden company-card cursor-pointer" elevation="2" hover @click="openAnalytics(company)">
-          <v-card class="rounded-lg overflow-hidden company-card" elevation="2" hover @click="openAnalytics(company)">
-            <!-- Шапка с кнопкой удаления -->
-            <div class="pa-4 bg-surface-variant d-flex justify-space-between align-start">
-              <div class="overflow-hidden flex-1 pr-2">
-                <div class="text-h6 font-weight-medium text-truncate">{{ company.name }}</div>
-                <div class="text-caption text-medium-emphasis">Код: {{ company.code }}</div>
-              </div>
-              <v-btn
-                class="mt-n1 mr-n2"
-                color="error"
-                icon="mdi-delete-outline"
-                size="small"
-                title="Удалить компанию"
-                variant="text"
-                @click.stop="openDeleteDialog(company)"
-              />
-            </div>
-            <!-- Метрики -->
-            <div class="pa-4">
-              <div class="d-flex justify-space-between mb-3">
-                <div class="text-center flex-1">
-                  <div class="text-h5 font-weight-bold text-primary">--</div>
-                  <div class="text-caption text-medium-emphasis">Сотрудников</div>
-                </div>
-                <v-divider vertical />
-                <div class="text-center flex-1">
-                  <div class="text-h5 font-weight-bold text-success">{{ company.specifications?.length || 0 }}</div>
-                  <div class="text-caption text-medium-emphasis">Спецификаций</div>
-                </div>
-              </div>
-              <v-progress-linear
-                class="mb-2"
-                color="info"
-                height="8"
-                :model-value="0"
-                rounded
-              />
-              <div class="d-flex justify-space-between align-center">
-                <span class="text-caption text-medium-emphasis">Прогресс обучения</span>
-                <span class="text-caption font-weight-bold">0%</span>
-              </div>
-            </div>
-            <v-divider />
-            <div class="pa-3 d-flex justify-end">
-              <v-btn append-icon="mdi-arrow-right" color="primary" size="small" variant="text">Аналитика</v-btn>
-            </div>
-          </v-card>
-        </v-card></v-col>
-    </v-row>
-
-    <v-empty-state v-if="!companiesStore.state.loading && companiesStore.state.items.length === 0" class="mt-8" icon="mdi-office-building-remove" title="Компании не найдены" />
-
-    <!-- 🔹 Пагинация -->
-    <div v-if="totalPages > 1" class="d-flex justify-center mt-6">
-      <v-pagination :length="totalPages" :model-value="companiesStore.state.pagination.page" @update:model-value="companiesStore.goToPage" />
-    </div>
-
-    <!-- 🔹 Dialog: Аналитика компании -->
-    <v-dialog v-model="dialog" max-width="850" scrollable>
-      <v-card v-if="selectedCompany" class="rounded-lg" prepend-icon="mdi-chart-box-outline">
-        <template #title>
-          <span class="text-h5 font-weight-bold">Аналитика: {{ selectedCompany.name }}</span>
+        <!-- Название компании -->
+        <template #item.name="{ item }">
+          <div class="font-weight-medium">{{ item.name }}</div>
         </template>
-        <template #subtitle>
+
+        <!-- Код компании -->
+        <template #item.code="{ item }">
+          <v-chip size="small" variant="tonal" color="primary">{{ item.code }}</v-chip>
+        </template>
+
+        <!-- Количество спецификаций -->
+        <template #item.specifications="{ item }">
+          <v-chip size="small" variant="outlined" color="primary">
+            {{ item.specifications?.length || 0 }}
+          </v-chip>
+        </template>
+
+        <!-- Действия -->
+        <template #item.actions="{ item }">
+          <v-btn
+            color="primary"
+            icon="mdi-pencil"
+            size="small"
+            variant="text"
+            @click="openEditDialog(item)"
+          />
+          <v-btn
+            color="error"
+            icon="mdi-delete"
+            size="small"
+            variant="text"
+            @click="confirmDelete(item)"
+          />
+          <v-btn
+            color="secondary"
+            icon="mdi-eye"
+            size="small"
+            variant="text"
+            @click="openAnalytics(item)"
+          />
+        </template>
+      </v-data-table>
+
+      <!-- Пагинация и выбор размера страницы -->
+      <v-divider />
+      <div class="d-flex justify-space-between align-center pa-3 bg-surface-variant">
+        <div class="d-flex align-center ga-2">
+          <span class="text-caption text-medium-emphasis">Показывать по:</span>
+          <v-select
+            density="compact"
+            hide-details
+            :items="[5, 10, 20]"
+            :model-value="companiesStore.state.pagination.per_page"
+            style="width: 80px;"
+            variant="outlined"
+            @update:model-value="onPageSizeChange"
+          />
+          <span class="text-caption text-medium-emphasis">из {{ companiesStore.state.pagination.count }}</span>
+        </div>
+
+        <v-pagination
+          v-if="totalPages > 1"
+          :length="totalPages"
+          :model-value="companiesStore.state.pagination.page"
+          size="small"
+          @update:model-value="onPageChange"
+        />
+      </div>
+    </v-card>
+
+    <!-- Диалог добавления/редактирования -->
+    <v-dialog v-model="dialogVisible" max-width="500px">
+      <v-card>
+        <v-card-title class="text-h5 font-weight-bold pt-4">
+          {{ editingCompany ? 'Редактировать компанию' : 'Добавить компанию' }}
+        </v-card-title>
+        <v-card-text class="pa-4">
+          <v-form ref="formRef" v-model="formValid">
+            <v-text-field
+              v-model="formData.name"
+              label="Полное наименование *"
+              required
+              :rules="[requiredRule]"
+              counter="255"
+            />
+            <v-text-field
+              v-model="formData.code"
+              label="Код компании (2-4 символа) *"
+              required
+              :rules="[requiredRule, codeRule]"
+              counter="4"
+              maxlength="4"
+            />
+          </v-form>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="dialogVisible = false">Отмена</v-btn>
+          <v-btn color="primary" :disabled="!formValid" @click="saveCompany">
+            Сохранить
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Диалог просмотра аналитики -->
+    <v-dialog v-model="analyticsDialogVisible" max-width="700" scrollable>
+      <v-card v-if="selectedCompany">
+        <v-card-title class="text-h5 font-weight-bold pt-4">
+          Аналитика: {{ selectedCompany.name }}
+        </v-card-title>
+        <v-card-subtitle class="px-4 pb-2">
           Код: <v-chip size="x-small">{{ selectedCompany.code }}</v-chip> | ID: {{ selectedCompany.id }}
-        </template>
-
+        </v-card-subtitle>
         <v-divider class="my-2" />
+          <v-card-text class="pa-4">
+            <!-- 📊 Блок статистики -->
+            <!-- Карточки метрик -->
+            <v-row v-if="statsLoading" class="mb-4">
+              <v-col cols="12">
+                <div class="d-flex justify-center py-4">
+                  <v-progress-circular color="primary" indeterminate size="40" />
+                </div>
+              </v-col>
+            </v-row>
 
-        <v-card-text class="pa-5">
-          <v-alert class="mb-4" type="info" variant="tonal">
-            <template #title>📊 Данные аналитики</template>
-            <div class="text-body-2 text-medium-emphasis mt-1">
-              Список привязанных спецификаций обучения.
-            </div>
-          </v-alert>
+            <v-row v-else-if="companyStats" class="mb-4">
+              <!-- Средний прогресс -->
+              <v-col cols="6" md="3">
+                <v-card variant="outlined" class="text-center pa-3 h-100" elevation="0">
+                  <v-icon color="primary" size="32" class="mb-2">mdi-progress-check</v-icon>
+                  <div class="text-h4 font-weight-bold text-primary">
+                    {{ companyStats.average_progress }}%
+                  </div>
+                  <div class="text-caption text-medium-emphasis">Средний прогресс</div>
+                </v-card>
+              </v-col>
 
-          <v-table class="elevation-0 border-thin rounded-lg" density="comfortable">
-            <thead>
-              <tr>
-                <th class="text-uppercase text-caption">Спецификация</th>
-                <th class="text-uppercase text-caption text-right">Дата</th>
-                <th class="text-uppercase text-caption text-right">Номер</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="spec in selectedCompany.specifications" :key="spec.id">
-                <td class="font-weight-medium">Спецификация #{{ spec.id }}</td>
-                <td class="text-right">{{ formatDate(spec.date) }}</td>
-                <td class="text-right">{{ spec.number }}</td>
-              </tr>
-              <tr v-if="!selectedCompany.specifications?.length">
-                <td class="text-center text-medium-emphasis py-4" colspan="3">Нет привязанных спецификаций</td>
-              </tr>
-            </tbody>
-          </v-table>
-        </v-card-text>
+              <!-- Подписавшие сотрудники -->
+              <v-col cols="6" md="3">
+                <v-card variant="outlined" class="text-center pa-3 h-100" elevation="0">
+                  <v-icon color="success" size="32" class="mb-2">mdi-account-check</v-icon>
+                  <div class="text-h4 font-weight-bold text-success">
+                    {{ companyStats.employees_signed }}
+                  </div>
+                  <div class="text-caption text-medium-emphasis">Сотрудников подписало</div>
+                </v-card>
+              </v-col>
 
-        <v-divider />
-        <v-card-actions class="pa-4">
+              <!-- Количество спецификаций -->
+              <v-col cols="6" md="3">
+                <v-card variant="outlined" class="text-center pa-3 h-100" elevation="0">
+                  <v-icon color="info" size="32" class="mb-2">mdi-file-document-multiple</v-icon>
+                  <div class="text-h4 font-weight-bold text-info">
+                    {{ companyStats.specifications_count }}
+                  </div>
+                  <div class="text-caption text-medium-emphasis">Спецификаций</div>
+                </v-card>
+              </v-col>
+
+              <!-- Потраченный бюджет -->
+              <v-col cols="6" md="3">
+                <v-card variant="outlined" class="text-center pa-3 h-100" elevation="0">
+                  <v-icon color="warning" size="32" class="mb-2">mdi-currency-rub</v-icon>
+                  <div class="text-h5 font-weight-bold text-warning">
+                    {{ formatCurrency(companyStats.total_budget_spent) }}
+                  </div>
+                  <div class="text-caption text-medium-emphasis">Потрачено</div>
+                </v-card>
+              </v-col>
+            </v-row>
+
+            <!-- Привязанные спецификации -->
+            <v-divider class="my-4" />
+
+            <div class="text-h6 font-weight-medium mb-3">📋 Привязанные спецификации</div>
+
+            <v-table density="compact" class="elevation-0 border-thin rounded-lg">
+              <thead>
+                <tr class="bg-surface-variant">
+                  <th>Номер</th>
+                  <th class="text-right">Дата</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="spec in selectedCompany?.specifications" :key="spec.id">
+                  <td class="font-weight-medium">{{ spec.number }}</td>
+                  <td class="text-right">{{ formatDate(spec.date) }}</td>
+                </tr>
+                <tr v-if="!selectedCompany?.specifications?.length">
+                  <td colspan="3" class="text-center text-medium-emphasis py-4">
+                    Нет привязанных спецификаций
+                  </td>
+                </tr>
+              </tbody>
+            </v-table>
+          </v-card-text>
+        <v-card-actions>
           <v-spacer />
-          <v-btn variant="text" @click="dialog = false">Закрыть</v-btn>
+          <v-btn variant="text" @click="analyticsDialogVisible = false">Закрыть</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
 
-    <!-- 🔹 Dialog: Создание компании -->
-    <v-dialog v-model="createDialog" max-width="480">
+    <!-- Диалог подтверждения удаления -->
+    <v-dialog v-model="deleteDialogVisible" max-width="400px">
       <v-card>
-        <v-card-title class="text-h6 font-weight-bold pt-4">Новая компания</v-card-title>
-        <v-card-subtitle class="px-4 pb-2">Заполните обязательные поля для создания записи</v-card-subtitle>
-        <v-divider class="my-2" />
-
-        <v-card-text class="pa-4">
-          <v-form v-model="formValid" @submit.prevent="submitCreate">
-            <v-text-field
-              v-model="form.name"
-              class="mb-3"
-              density="compact"
-              label="Полное наименование *"
-              :rules="[v => !!v?.trim() || 'Название обязательно']"
-              variant="outlined"
-            />
-            <v-text-field
-              v-model="form.code"
-              counter="4"
-              density="compact"
-              label="Код компании (2-4 символа) *"
-              :rules="[
-                v => !!v?.trim() || 'Код обязателен',
-                v => (v?.length >= 2 && v?.length <= 4) || 'Длина кода от 2 до 4 символов'
-              ]"
-              variant="outlined"
-            />
-          </v-form>
+        <v-card-title class="text-h6">Подтверждение удаления</v-card-title>
+        <v-card-text>
+          Вы уверены, что хотите удалить компанию <strong>{{ companyToDelete?.name }}</strong>?
+          <div class="text-caption text-medium-emphasis mt-2">
+            Все привязанные спецификации потеряют ссылку на эту компанию.
+          </div>
         </v-card-text>
-
-        <v-divider />
-        <v-card-actions class="pa-4">
+        <v-card-actions>
           <v-spacer />
-          <v-btn variant="text" @click="createDialog = false">Отмена</v-btn>
-          <v-btn color="primary" :disabled="!formValid" :loading="createLoading" @click="submitCreate">Создать</v-btn>
+          <v-btn variant="text" @click="deleteDialogVisible = false">Отмена</v-btn>
+          <v-btn color="error" @click="deleteCompany">Удалить</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
 
-    <!-- 🔹 Dialog: Создание компании -->
-    <v-dialog v-model="createDialog" max-width="480">
-      <v-card>
-        <v-card-title class="text-h6 font-weight-bold pt-4">Новая компания</v-card-title>
-        <v-card-subtitle class="px-4 pb-2">Заполните обязательные поля для создания записи</v-card-subtitle>
-        <v-divider class="my-2" />
-
-        <v-card-text class="pa-4">
-          <v-form v-model="formValid" @submit.prevent="submitCreate">
-            <v-text-field
-              v-model="form.name"
-              class="mb-3"
-              density="compact"
-              label="Полное наименование *"
-              :rules="[v => !!v?.trim() || 'Название обязательно']"
-              variant="outlined"
-            />
-            <v-text-field
-              v-model="form.code"
-              counter="4"
-              density="compact"
-              label="Код компании (2-4 символа) *"
-              :rules="[
-                v => !!v?.trim() || 'Код обязателен',
-                v => (v?.length >= 2 && v?.length <= 4) || 'Длина кода от 2 до 4 символов'
-              ]"
-              variant="outlined"
-            />
-          </v-form>
-        </v-card-text>
-
-        <v-divider />
-        <v-card-actions class="pa-4">
-          <v-spacer />
-          <v-btn variant="text" @click="createDialog = false">Отмена</v-btn>
-          <v-btn color="primary" :disabled="!formValid" :loading="createLoading" @click="submitCreate">Создать</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-
-    <!-- 🔹 Dialog: Подтверждение удаления -->
-    <v-dialog v-model="deleteDialog" max-width="420">
-      <v-card>
-        <v-card-title class="text-h6 font-weight-bold pt-4 text-error">Удалить компанию?</v-card-title>
-        <v-card-subtitle class="px-4 pb-2">Это действие необратимо</v-card-subtitle>
-        <v-divider class="my-2" />
-
-        <v-card-text class="pa-4">
-          <p class="text-body-1">
-            Вы уверены, что хотите удалить компанию
-            <strong class="text-primary">"{{ companyToDelete?.name }}"</strong>?
-          </p>
-          <p class="text-caption text-medium-emphasis mt-2">
-            Все привязанные спецификации и ссылки будут потеряны.
-          </p>
-        </v-card-text>
-
-        <v-divider />
-        <v-card-actions class="pa-4">
-          <v-spacer />
-          <v-btn variant="text" @click="deleteDialog = false">Отмена</v-btn>
-          <v-btn color="error" :loading="deleteLoading" @click="submitDelete">Удалить</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <!-- Уведомления -->
+    <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
+      {{ snackbar.message }}
+    </v-snackbar>
   </v-container>
 </template>
 
 <script setup lang="ts">
-  import type { CompanyRequest, CompanyResponse } from '@/types/api'
-  import { computed, onMounted, ref } from 'vue'
-  import { companiesStore } from '@/stores/companiesStore'
+import type { CompanyRequest, CompanyResponse } from '@/types/api'
+import { computed, onMounted, ref } from 'vue'
+import api from '@/api/client'
+import { companiesApi, companiesStore } from '@/stores/companiesStore'
 
-  // 🔍 Поиск
-  const search = ref('')
-  const totalPages = computed(() => Math.ceil(companiesStore.state.pagination.count / companiesStore.state.pagination.pageSize) || 1)
+// Состояние
+const searchQuery = ref('')
+const dialogVisible = ref(false)
+const analyticsDialogVisible = ref(false)
+const deleteDialogVisible = ref(false)
+const editingCompany = ref<CompanyResponse | null>(null)
+const selectedCompany = ref<CompanyResponse | null>(null)
+const companyToDelete = ref<CompanyResponse | null>(null)
+const formValid = ref(false)
+const formRef = ref<any>(null)
+const companyStats = ref<{
+  average_progress: number;
+  employees_signed: number;
+  specifications_count: number;
+  total_budget_spent: number;
+} | null>(null)
+const statsLoading = ref(false)
 
-  function handleSearch () {
-    companiesStore.reset()
-    companiesStore.fetch({ search: search.value || undefined })
+
+// Форма
+const formData = ref<CompanyRequest>({
+  name: '',
+  code: '',
+})
+
+// Уведомления
+const snackbar = ref({
+  show: false,
+  message: '',
+  color: 'success',
+})
+
+// Заголовки таблицы
+const headers = [
+  { title: 'Наименование', key: 'name', width: 300, align: 'start' },
+  { title: 'Код', key: 'code', sortable: true, width: 100, align: 'start' },
+  { title: 'Спецификаций', key: 'specifications', sortable: false, width: 120, align: 'center' },
+  { title: 'Действия', key: 'actions', sortable: false, width: 160, align: 'end' },
+]
+
+// Пагинация
+const totalPages = computed(() => Math.ceil(companiesStore.state.pagination.count / companiesStore.state.pagination.per_page) || 1)
+
+// Валидация
+const requiredRule = (v: string) => !!v || 'Поле обязательно'
+const codeRule = (v: string) => {
+  if (!v) return true
+  const len = v.trim().length
+  return (len >= 2 && len <= 4) || 'Код должен содержать от 2 до 4 символов'
+}
+
+function showSnackbar (message: string, color = 'success') {
+  snackbar.value = { show: true, message, color }
+}
+
+async function loadCompanies () {
+  const params: Record<string, any> = {}
+  if (searchQuery.value) params.search = searchQuery.value
+  await companiesStore.fetch(params, true)
+}
+
+let searchTimeout: ReturnType<typeof setTimeout>
+function onSearchChange () {
+  clearTimeout(searchTimeout)
+  searchTimeout = setTimeout(() => {
+    companiesStore.state.pagination.page = 1
+    loadCompanies()
+  }, 300)
+}
+
+function onPageChange (page: number) {
+  companiesStore.goToPage(page)
+  loadCompanies()
+}
+
+async function onPageSizeChange (size: number) {
+  companiesStore.changePageSize(size)
+  await loadCompanies()
+}
+
+function openAddDialog () {
+  editingCompany.value = null
+  formData.value = { name: '', code: '' }
+  dialogVisible.value = true
+}
+
+async function loadCompanyStats(companyId: number) {
+  statsLoading.value = true
+  companyStats.value = null
+  try {
+    const response = await api.get(`/api/stats/company/${companyId}`)
+    companyStats.value = response.data
+  } catch (error) {
+    console.error('Ошибка загрузки статистики:', error)
+    showSnackbar('Не удалось загрузить статистику', 'error')
+  } finally {
+    statsLoading.value = false
   }
+}
 
-  // 📊 Аналитика
-  const dialog = ref(false)
-  const selectedCompany = ref<CompanyResponse | null>(null)
-
-  function openAnalytics (company: CompanyResponse) {
-    selectedCompany.value = company
-    dialog.value = true
+function openEditDialog (company: CompanyResponse) {
+  editingCompany.value = company
+  formData.value = {
+    name: company.name,
+    code: company.code,
   }
+  dialogVisible.value = true
+}
 
-  // ➕ Создание
-  const createDialog = ref(false)
-  const formValid = ref(false)
-  const createLoading = ref(false)
-  const form = ref<CompanyRequest>({ code: '', name: '' })
-
-  function openCreateDialog () {
-    form.value = { code: '', name: '' }
-    formValid.value = false
-    createDialog.value = true
-  }
-
-  async function submitCreate () {
-    if (!formValid.value) return
-    createLoading.value = true
-    try {
-      await companiesStore.create(form.value)
-      createDialog.value = false
-      companiesStore.fetch() // Обновляем список и пагинацию
-    } catch (error) {
-      console.error('Ошибка создания компании:', error)
-    } finally {
-      createLoading.value = false
+async function saveCompany () {
+  const { valid } = await formRef.value.validate()
+  if (!valid) return
+  try {
+    if (editingCompany.value) {
+      await companiesApi.update(editingCompany.value.id, formData.value)
+      showSnackbar('Компания обновлена')
+    } else {
+      await companiesApi.create(formData.value)
+      showSnackbar('Компания добавлена')
     }
+    dialogVisible.value = false
+    await loadCompanies()
+  } catch (error: any) {
+    const message = error.response?.data?.detail || 'Ошибка сохранения'
+    showSnackbar(message, 'error')
   }
+}
 
-  // 🗑 Удаление
-  const deleteDialog = ref(false)
-  const deleteLoading = ref(false)
-  const companyToDelete = ref<CompanyResponse | null>(null)
+function confirmDelete (company: CompanyResponse) {
+  companyToDelete.value = company
+  deleteDialogVisible.value = true
+}
 
-  function openDeleteDialog (company: CompanyResponse) {
-    companyToDelete.value = company
-    deleteDialog.value = true
+async function deleteCompany () {
+  if (!companyToDelete.value) return
+  try {
+    await companiesApi.remove(companyToDelete.value.id)
+    showSnackbar('Компания удалена')
+    deleteDialogVisible.value = false
+    await loadCompanies()
+  } catch (error: any) {
+    const message = error.response?.data?.detail || 'Ошибка удаления'
+    showSnackbar(message, 'error')
   }
+}
 
-  async function submitDelete () {
-    if (!companyToDelete.value) return
-    deleteLoading.value = true
-    try {
-      await companiesStore.remove(companyToDelete.value.id)
-      deleteDialog.value = false
-      companiesStore.fetch() // Обновляем список и пагинацию
-    } catch (error) {
-      console.error('Ошибка удаления компании:', error)
-    } finally {
-      deleteLoading.value = false
-    }
-  }
+function openAnalytics (company: CompanyResponse) {
+  selectedCompany.value = company
+  analyticsDialogVisible.value = true
+  loadCompanyStats(company.id)
+}
+// 🛠 Утилиты
+function formatDate (dateStr: string): string {
+  if (!dateStr) return '--'
+  const [y, m, d] = dateStr.split('-')
+  return `${d}.${m}.${y}`
+}
 
-  // 🛠 Утилиты
-  function formatDate (dateStr: string): string {
-    if (!dateStr) return '--'
-    const [year, month, day] = dateStr.split('-')
-    return `${day}.${month}.${year}`
-  }
+function formatCurrency (value: number): string {
+  return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 0 }).format(value)
+}
 
-  onMounted(() => companiesStore.fetch())
+onMounted(async () => {
+  await loadCompanies()
+})
 </script>
 
 <style scoped>
-.company-card { transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease; }
-.company-card:hover { transform: translateY(-5px); box-shadow: 0 12px 28px rgba(0,0,0,0.15) !important; }
-.flex-1 { flex: 1; }
+.drop-zone {
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: #fafafa;
+}
+
+.drop-zone:hover {
+  border-color: #1976d2;
+  background-color: #f0f7ff;
+}
+
+.drop-zone-active {
+  border-color: #1976d2;
+  background-color: #e3f2fd;
+}
+
+.v-data-table__wrapper {
+  transition: opacity 0.2s ease;
+}
+
 </style>
