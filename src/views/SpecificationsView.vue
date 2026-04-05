@@ -67,14 +67,14 @@
 
         <!-- Компания -->
         <template #item.company="{ item }">
-          <v-chip size="small" variant="tonal" color="primary">
+          <v-chip color="primary" size="small" variant="tonal">
             {{ item.company.name }}
           </v-chip>
         </template>
 
         <!-- Группы -->
         <template #item.groups="{ item }">
-          <v-chip size="small" variant="outlined" color="primary">
+          <v-chip color="primary" size="small" variant="outlined">
             {{ item.groups.length }}
           </v-chip>
         </template>
@@ -140,14 +140,6 @@
         <v-card-text class="pa-4">
           <v-form v-model="formValid" @submit.prevent="submitCreate">
             <v-text-field
-              v-model="form.number"
-              label="Номер спецификации *"
-              required
-              :rules="[v => !!v?.trim() || 'Номер обязателен', v => (v?.length <= 50) || 'Максимум 50 символов']"
-              counter="50"
-              placeholder="СП-2025-001"
-            />
-            <v-text-field
               v-model="form.date"
               label="Дата спецификации *"
               required
@@ -156,15 +148,21 @@
             />
             <v-autocomplete
               v-model="form.company_id"
-              label="Компания-заказчик *"
-              required
-              :rules="[v => !!v || 'Выберите компанию']"
               item-title="name"
               item-value="id"
               :items="companiesStore.state.items"
+              label="Компания-заказчик *"
               prepend-inner-icon="mdi-office-building-marker"
+              required
+              :rules="[v => !!v || 'Выберите компанию']"
             />
-            <v-alert class="mt-2" density="compact" type="info" variant="tonal" color="green-accent-4">
+            <v-alert
+              class="mt-2"
+              color="green-accent-4"
+              density="compact"
+              type="info"
+              variant="tonal"
+            >
               <template #title>💡 Подсказка</template>
               <span class="text-caption">После создания спецификации вы сможете добавить в неё учебные группы через страницу "Группы".</span>
             </v-alert>
@@ -212,7 +210,7 @@
   const search = ref('')
 
   const totalPages = computed(() =>
-    Math.ceil(specificationsStore.state.pagination.count / specificationsStore.state.pagination.per_page) || 1
+    Math.ceil(specificationsStore.state.pagination.count / specificationsStore.state.pagination.per_page) || 1,
   )
 
   // Уведомления
