@@ -8,7 +8,7 @@
     :rail-width="75"
   >
     <template #prepend>
-      <v-list-item class="px-4" prepend-icon="$vuetify" subtitle="Хакатон v2" title="Global ERP Learning" />
+      <v-list-item class="px-4" prepend-icon="mdi-fruit-watermelon" subtitle="Хакатон v1" title="АРБУЗ ERP" />
       <v-divider />
     </template>
 
@@ -27,7 +27,7 @@
 
     <template #append>
       <v-divider />
-      <v-list-item class="bg-primary" prepend-icon="mdi-chevron-left" :title="rail ? 'Развернуть' : 'Свернуть'" @click="rail = !rail" />
+      <v-list-item class="bg-primary" :prepend-icon="rail ?'mdi-chevron-right' :'mdi-chevron-left' " :title="rail ? 'Развернуть' : 'Свернуть'" @click="rail = !rail" />
     </template>
   </v-navigation-drawer>
 </template>

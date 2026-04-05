@@ -142,7 +142,7 @@
 
   // ---------- Геометрические константы ----------
   const rowHeight = 50 // Высота строки для одной группы
-  const leftPanelWidth = 150 // Ширина левой панели с названиями
+  const leftPanelWidth = 200 // Ширина левой панели с названиями
 
   // Приводим даты к объектам Date для удобства
   const normalizedGroups = computed(() =>
@@ -542,7 +542,7 @@
         }
       }
     }
-    if (Object.keys(conflictsMap).length > 0 && !showConflictSnackbar.value) {
+    if (Object.keys(conflictsMap).length > 0) {
       showConflictSnackbar.value = true // Показываем предупреждение при первом обнаружении
     }
     return conflictsMap
