@@ -102,13 +102,13 @@
         <template #item.average_progress="{ item }">
           <div class="d-flex align-center ga-2">
             <v-progress-linear
-              color="info"
+              color="green-accent-4"
               height="6"
               :model-value="item.average_progress"
               rounded
               style="width: 80px;"
             />
-            <span class="text-caption">{{ item.average_progress }}%</span>
+            <span class="text-caption">{{ formatProgress(item.average_progress) }}%</span>
           </div>
         </template>
 
@@ -320,7 +320,7 @@
             <v-col cols="6" sm="3">
               <v-sheet class="pa-3 rounded text-center" color="success" variant="tonal">
                 <div class="text-caption">Прогресс</div>
-                <div class="text-h5 font-weight-bold">{{ selectedGroup.average_progress }}%</div>
+                <div class="text-h5 font-weight-bold">{{ formatProgress(selectedGroup.average_progress) }}%</div>
               </v-sheet>
             </v-col>
             <v-col cols="6" sm="3">
@@ -356,15 +356,21 @@
                   <div class="d-flex align-center ga-2">
                     <v-slider
                       v-model="emp.progress_percent"
+                      color="primary"
                       hide-details
-                      :max="100"
-                      :min="0"
+                      density="compact"
+                      min="0"
+                      max="100"
+                      step="1"
                       style="width: 100px;"
-                      thumb-label
                       @end="updateEmployeeProgress(emp.id, emp.progress_percent)"
-                    />
-                    <span class="text-caption font-weight-bold">{{ emp.progress_percent }}%</span>
-                  </div>
+                    ></v-slider>
+                    
+                    <span class="text-caption font-weight-bold" style="min-width: 35px;">
+                      {{ formatProgress(emp.progress_percent) }}%
+                    </span>
+                    
+                    </div>
                 </td>
                 <td class="text-center">
                   <v-btn
@@ -520,6 +526,12 @@ import api from '@/api/client'
     const [y, m, d] = dateStr.split('-')
     return `${d}.${m}.${y}`
   }
+  function formatProgress(value: number | string | null | undefined): number {
+    if (value === null || value === undefined || isNaN(Number(value))) {
+      return 0
+    }
+    return Math.round(Number(value))
+  }
   function formatCurrency (value: string | number): string {
     const num = typeof value === 'string' ? Number.parseFloat(value) : value
     return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 0 }).format(num)
@@ -590,23 +602,24 @@ import api from '@/api/client'
   async function openDetailModal (group: GroupResponse) {
     selectedGroup.value = group
     detailDialog.value = true
-    // Load employees for this group via specialized store
-    const { state } = useGroupEmployees(group.id)
-    // Wait for fetch and assign
-    setTimeout(() => {
-      if (state.data) {
-        groupEmployees.value = state.data.employees
-      }
-    }, 100)
+    
+    const { state, fetch } = useGroupEmployees(group.id)
+    await fetch() 
+    
+    if (state.data) {
+      groupEmployees.value = state.data.employees
+    }
   }
 
   async function updateEmployeeProgress (employeeId: number, progress: number) {
     if (!selectedGroup.value) return
     try {
-      await api.patch(`/api/groups/${selectedGroup.value.id}/employee/${employeeId}/`, { progress_percent: progress })
+      const intProgress = formatProgress(progress)
+      await api.patch(`/api/groups/${selectedGroup.value.id}/employee/${employeeId}/`, { progress_percent: intProgress })
       // Refresh local state
       const emp = groupEmployees.value.find(e => e.id === employeeId)
-      if (emp) emp.progress_percent = progress
+      if (emp) emp.progress_percent = intProgress
+      await groupsStore.fetch()
     } catch (error) {
       console.error('Ошибка обновления прогресса:', error)
     }
@@ -616,10 +629,15 @@ import api from '@/api/client'
     if (!selectedGroup.value || !newEmployeeId.value) return
     try {
       await api.post(`/api/groups/${selectedGroup.value.id}/employee/`, { employee_ids: [newEmployeeId.value] })
+      const addedId = newEmployeeId.value
       newEmployeeId.value = null
-      // Refresh employees list
-      const { fetch } = useGroupEmployees(selectedGroup.value.id)
-      fetch()
+      const { state, fetch } = useGroupEmployees(selectedGroup.value.id)
+      await fetch()
+      if (state.data) {
+        groupEmployees.value = state.data.employees
+      }
+
+      await groupsStore.fetch()
     } catch (error) {
       console.error('Ошибка добавления участника:', error)
     }
