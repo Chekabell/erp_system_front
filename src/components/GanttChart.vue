@@ -39,7 +39,7 @@
         <v-card-title>{{ selectedGroup.course_title }}</v-card-title>
         <v-card-text>
           <p><strong>📅 Даты:</strong> {{ formatDate(selectedGroup.start_date) }} – {{ formatDate(selectedGroup.end_date) }}</p>
-          <p><strong>📈 Прогресс курса:</strong> {{ selectedGroup.average_progress }}%</p>
+          <p><strong>📈 Прогресс курса:</strong> {{ Math.round(selectedGroup.average_progress) }}%</p>
           <v-divider class="my-2" />
           <p><strong>👥 Состав группы ({{ selectedGroup.members?.length || 0 }} чел.):</strong></p>
           <v-chip v-for="member in selectedGroup.members" :key="member.id" class="ma-1" size="small">
@@ -248,8 +248,8 @@
       // Название внутри полосы
       ctx.font = '12px "Segoe UI"'
       ctx.fillStyle = '#0d47a1'
-      let text = group.course_title
-      let textWidth = ctx.measureText(text).width
+      const text = group.course_title
+      const textWidth = ctx.measureText(text).width
       if (textWidth < width - 10) {
         ctx.fillText(text, startX + 5, y + rowHeight / 2 + 3)
       } else {
