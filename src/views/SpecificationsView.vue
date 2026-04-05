@@ -209,10 +209,8 @@
   import { companiesStore } from '@/stores/companiesStore'
   import { specificationsStore } from '@/stores/specificationsStore'
 
-  // 🔍 Поиск и пагинация
   const search = ref('')
 
-  // 👇 ВАЖНО: используем то же имя поля, что и в store (per_page или pageSize — проверьте ваш store!)
   const totalPages = computed(() =>
     Math.ceil(specificationsStore.state.pagination.count / specificationsStore.state.pagination.per_page) || 1
   )
@@ -238,33 +236,28 @@
     { title: 'Действия', key: 'actions', sortable: false, width: 140, align: 'end' },
   ]
 
-  // 👇 Функция загрузки с параметрами
   async function loadSpecifications () {
     const params: Record<string, any> = {}
     if (search.value) params.search = search.value
     await specificationsStore.fetch(params, true)
   }
 
-  // 👇 Обработчик поиска (сброс на 1 страницу + дебаунс опционально)
   function handleSearch () {
     specificationsStore.state.pagination.page = 1
     loadSpecifications()
   }
 
-  // 👇 Обработчик изменения страницы (БЫЛ ОТСУТСТВУЕТ — это главная причина!)
   function onPageChange (page: number) {
     specificationsStore.goToPage(page)
     loadSpecifications()
   }
 
-  // 👇 Обработчик изменения размера страницы (БЫЛ ОТСУТСТВУЕТ!)
   async function onPageSizeChange (size: number) {
     specificationsStore.changePageSize(size)
-    specificationsStore.state.pagination.page = 1 // сброс на первую страницу при смене размера
+    specificationsStore.state.pagination.page = 1
     await loadSpecifications()
   }
 
-  // ➕ Создание спецификации
   const createDialog = ref(false)
   const formValid = ref(false)
   const createLoading = ref(false)
