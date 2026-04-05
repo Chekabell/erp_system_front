@@ -32,7 +32,7 @@ const router = createRouter({
 })
 
 router.beforeEach(to => {
-  document.title = to.meta.title ? `${to.meta.title} | Global ERP Learning` : 'Global ERP Learning'
+  document.title = to.meta.title ? `${to.meta.title} | АРБУЗ ERP` : 'АРБУЗ ERP'
 })
 
 export default router
