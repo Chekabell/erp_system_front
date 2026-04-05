@@ -1,327 +1,490 @@
 <template>
   <v-container class="pa-6" fluid>
-    <!-- 🔹 Header -->
-    <v-card class="mb-6 pa-4 rounded-lg" elevation="2">
-      <div class="d-flex flex-wrap align-center justify-space-between ga-4">
-        <div>
-          <h1 class="text-h4 font-weight-bold mb-1">Курсы обучения</h1>
-          <p class="text-body-2 text-medium-emphasis">Образовательные программы, доступные для записи участников</p>
-        </div>
-        <div class="d-flex ga-3" style="max-width: 600px; flex: 1;">
-          <v-text-field
-            v-model="search"
-            density="compact"
-            hide-details
-            label="Поиск по названию курса..."
-            prepend-inner-icon="mdi-magnify"
-            variant="solo"
-            @keyup.enter="handleSearch"
-          />
-          <v-btn color="primary" :loading="coursesStore.state.loading" @click="handleSearch">Найти</v-btn>
-          <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreateDialog">Создать</v-btn>
-        </div>
-      </div>
-    </v-card>
+    <!-- Заголовок -->
+    <v-row align="center">
+      <v-col>
+        <h1 class="text-h4 font-weight-semibold" style="font-size: 40px;">Учебные курсы</h1>
+      </v-col>
+    </v-row>
 
-    <!-- 🔹 Loading / Error -->
+    <v-divider class="my-6" />
+
+    <!-- Кнопки действий -->
+    <v-row align="center" class="mb-6" gap="20">
+      <v-btn
+        color="primary"
+        prepend-icon="mdi-plus"
+        style="font-size: 22px;"
+        @click="openAddDialog"
+      >
+        Добавить курс
+      </v-btn>
+      <v-btn
+        color="secondary"
+        prepend-icon="mdi-upload"
+        style="font-size: 22px;"
+        @click="xmlImportDialogVisible = true"
+      >
+        XML-импорт
+      </v-btn>
+    </v-row>
+
+    <!-- Поиск и фильтр -->
+    <v-row align="center" class="mb-4">
+      <v-col cols="12" md="6">
+        <v-text-field
+          v-model="searchQuery"
+          clearable
+          density="comfortable"
+          label="Поиск по названию или описанию"
+          prepend-inner-icon="mdi-magnify"
+          variant="outlined"
+          @update:model-value="onSearchChange"
+        />
+      </v-col>
+      <v-col cols="12" md="4">
+        <v-text-field
+          v-model="minDuration"
+          density="comfortable"
+          label="Мин. длительность (дни)"
+          type="number"
+          variant="outlined"
+          @update:model-value="onFilterChange"
+        />
+      </v-col>
+      <v-col cols="12" md="2">
+        <v-text-field
+          v-model="maxPrice"
+          density="comfortable"
+          label="Макс. цена"
+          type="number"
+          variant="outlined"
+          @update:model-value="onFilterChange"
+        />
+      </v-col>
+    </v-row>
+
+    <!-- Состояния загрузки и ошибок -->
     <div v-if="coursesStore.state.loading && !coursesStore.state.isFetched" class="d-flex justify-center mt-8">
       <v-progress-circular color="primary" indeterminate size="64" />
     </div>
     <v-alert v-else-if="coursesStore.state.error" class="mt-4" type="error" variant="tonal">
       {{ coursesStore.state.error }}
-      <v-btn class="ml-2" color="error" variant="text" @click="handleSearch">Повторить</v-btn>
     </v-alert>
 
-    <!-- 🔹 Grid -->
-    <v-row v-else dense>
-      <v-col
-        v-for="course in coursesStore.state.items"
-        :key="course.id"
-        cols="12"
-        lg="3"
-        md="4"
-        sm="6"
+    <!-- Таблица курсов -->
+    <v-card v-else class="rounded-lg overflow-hidden" elevation="2">
+      <v-data-table
+        class="elevation-0"
+        disable-pagination
+        :headers="headers"
+        hide-default-footer
+        hover
+        item-key="id"
+        :items="coursesStore.state.items"
+        :items-per-page="coursesStore.state.pagination.per_page"
+        no-data-text="Курсы не найдены"
       >
-        <v-card
-          class="rounded-lg pa-4 card-hover-transition cursor-pointer h-100"
-          elevation="2"
-          hover
-          @click="openModal(course)"
-        >
-          <!-- Шапка карточки с кнопкой удаления -->
-          <div class="d-flex justify-space-between align-start mb-2">
-            <v-avatar class="text-white" :color="getAccentColor(course.id)" size="44">
-              <v-icon size="24">mdi-book-open-page-variant</v-icon>
-            </v-avatar>
-            <v-btn
-              class="mt-n2 mr-n2"
-              color="error"
-              icon="mdi-delete-outline"
-              size="small"
-              title="Удалить курс"
-              variant="text"
-              @click.stop="openDeleteDialog(course)"
-            />
-          </div>
+        <template #item.title="{ item }">
+          <div class="font-weight-medium">{{ item.title }}</div>
+        </template>
+        <template #item.description="{ item }">
+          <div class="text-caption">{{ item.description }}</div>
+        </template>
+        <template #item.duration_days="{ item }">
+          <v-chip color="info" size="small">{{ item.duration_days }} дн.</v-chip>
+        </template>
+        <template #item.base_price="{ item }">
+          <div class="font-weight-medium">{{ Number(item.base_price).toLocaleString() }} ₽</div>
+        </template>
+        <template #item.actions="{ item }">
+          <v-btn
+            color="primary"
+            icon="mdi-pencil"
+            size="small"
+            variant="text"
+            @click="openEditDialog(item)"
+          />
+          <v-btn
+            color="error"
+            icon="mdi-delete"
+            size="small"
+            variant="text"
+            @click="confirmDelete(item)"
+          />
+          <v-btn
+            color="success"
+            icon="mdi-xml"
+            size="small"
+            variant="text"
+            @click="exportCourseToXML(item)"
+          />
+        </template>
+      </v-data-table>
 
-          <v-card-title class="text-h6 font-weight-medium line-clamp-2 mb-1">{{ course.title }}</v-card-title>
-          <v-card-subtitle class="text-caption text-medium-emphasis mb-3">Длительность: <span class="font-weight-bold">{{ course.duration_days }} дн.</span></v-card-subtitle>
+      <!-- Пагинация и выбор размера страницы -->
+      <v-divider />
+      <div class="d-flex justify-space-between align-center pa-3 bg-surface-variant">
+        <div class="d-flex align-center ga-2">
+          <span class="text-caption text-medium-emphasis">Показывать по:</span>
+          <v-select
+            density="compact"
+            hide-details
+            :items="[5, 10, 20]"
+            :model-value="coursesStore.state.pagination.per_page"
+            style="width: 80px;"
+            variant="outlined"
+            @update:model-value="onPageSizeChange"
+          />
+          <span class="text-caption text-medium-emphasis">из {{ coursesStore.state.pagination.count }}</span>
+        </div>
 
-          <v-divider class="my-2" />
+        <v-pagination
+          v-if="totalPages > 1"
+          :length="totalPages"
+          :model-value="coursesStore.state.pagination.page"
+          size="small"
+          @update:model-value="onPageChange"
+        />
+      </div>
+    </v-card>
 
-          <v-card-text class="pt-0">
-            <div class="d-flex justify-space-between align-center">
-              <v-chip color="blue" size="small" variant="tonal"><v-icon size="small" start>mdi-clock-outline</v-icon>{{ course.duration_days }} дн.</v-chip>
-            </div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
-
-    <v-empty-state v-if="!coursesStore.state.loading && coursesStore.state.items.length === 0" class="mt-8" icon="mdi-book-off" title="Курсы не найдены" />
-    <!-- 🔹 Footer: Pagination -->
-    <div v-if="totalPages > 1" class="d-flex justify-center mt-6">
-      <v-pagination
-        :length="totalPages"
-        :model-value="coursesStore.state.pagination.page || 1"
-        :total-visible="7"
-        @update:model-value="handlePageChange"
-      />
-    </div>
-
-    <!-- 🔹 Dialog: Просмотр курса -->
-    <v-dialog v-model="dialog" max-width="650" scrollable>
-      <v-card v-if="selectedCourse" class="rounded-lg">
-        <v-card-title class="text-h5 font-weight-bold pt-4">{{ selectedCourse.title }}</v-card-title>
-        <v-card-subtitle class="px-4 pb-2">ID: {{ selectedCourse.id }}</v-card-subtitle>
-        <v-divider class="my-2" />
-        <v-card-text class="pa-4">
-          <p class="text-medium-emphasis mb-4">{{ selectedCourse.description || 'Описание не предоставлено.' }}</p>
-          <v-row dense>
-            <v-col cols="6"><v-card class="pa-4 text-center" color="primary" variant="tonal"><div class="text-caption">Длительность</div><div class="text-h5 font-weight-bold">{{ selectedCourse.duration_days }} дн.</div></v-card></v-col>
-            <v-col cols="6"><v-card class="pa-4 text-center" color="success" variant="tonal"><div class="text-caption">Стоимость</div><div class="text-h5 font-weight-bold">{{ formatPrice(selectedCourse.base_price) }}</div></v-card></v-col>
-          </v-row>
-        </v-card-text>
-        <v-card-actions><v-spacer /><v-btn variant="text" @click="dialog = false">Закрыть</v-btn></v-card-actions>
-      </v-card>
-    </v-dialog>
-
-    <!-- 🔹 Dialog: Создание курса -->
-    <v-dialog v-model="createDialog" max-width="520">
+    <!-- Диалог добавления/редактирования -->
+    <v-dialog v-model="dialogVisible" max-width="600px">
       <v-card>
-        <v-card-title class="text-h6 font-weight-bold pt-4">Новый курс обучения</v-card-title>
-        <v-card-subtitle class="px-4 pb-2">Заполните обязательные поля для создания курса</v-card-subtitle>
-        <v-divider class="my-2" />
-
+        <v-card-title class="text-h5 font-weight-bold pt-4">
+          {{ editingCourse ? 'Редактировать курс' : 'Добавить курс' }}
+        </v-card-title>
         <v-card-text class="pa-4">
-          <v-form v-model="formValid" @submit.prevent="submitCreate">
+          <v-form ref="formRef" v-model="formValid">
             <v-text-field
-              v-model="form.title"
-              class="mb-3"
-              counter="255"
-              density="compact"
-              label="Название курса *"
-              :rules="[v => !!v?.trim() || 'Название обязательно', v => (v?.length <= 255) || 'Максимум 255 символов']"
-              variant="outlined"
+              v-model="formData.title"
+              label="Название"
+              required
+              :rules="[requiredRule]"
             />
             <v-textarea
-              v-model="form.description"
-              class="mb-3"
-              counter="500"
-              density="compact"
-              label="Описание курса"
+              v-model="formData.description"
+              label="Описание"
               rows="3"
-              variant="outlined"
+              :rules="[requiredRule]"
             />
-            <v-row dense>
-              <v-col cols="6">
-                <v-text-field
-                  v-model.number="form.duration_days"
-                  density="compact"
-                  label="Длительность (дни) *"
-                  max="365"
-                  min="1"
-                  :rules="[
-                    v => !!v || 'Укажите длительность',
-                    v => v >= 1 || 'Минимум 1 день',
-                    v => v <= 365 || 'Максимум 365 дней'
-                  ]"
-                  type="number"
-                  variant="outlined"
-                />
-              </v-col>
-              <v-col cols="6">
-                <v-text-field
-                  v-model="form.base_price"
-                  density="compact"
-                  label="Цена за чел. (руб) *"
-                  min="0"
-                  prefix="₽"
-                  :rules="[
-                    v => !!v || 'Укажите цену',
-                    v => v >= 0 || 'Цена не может быть отрицательной'
-                  ]"
-                  step="100"
-                  type="number"
-                  variant="outlined"
-                />
-              </v-col>
-            </v-row>
+            <v-text-field
+              v-model="formData.duration_days"
+              label="Длительность (дни)"
+              required
+              :rules="[requiredRule, positiveNumberRule]"
+              type="number"
+            />
+            <v-text-field
+              v-model="formData.base_price"
+              label="Цена (₽)"
+              prefix="₽"
+              required
+              :rules="[requiredRule, positiveNumberRule]"
+              type="number"
+            />
           </v-form>
         </v-card-text>
-
-        <v-divider />
-        <v-card-actions class="pa-4">
+        <v-card-actions>
           <v-spacer />
-          <v-btn variant="text" @click="createDialog = false">Отмена</v-btn>
-          <v-btn color="primary" :disabled="!formValid" :loading="createLoading" @click="submitCreate">Создать</v-btn>
+          <v-btn variant="text" @click="dialogVisible = false">Отмена</v-btn>
+          <v-btn color="primary" :disabled="!formValid" @click="saveCourse">
+            Сохранить
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
 
-    <!-- 🔹 Dialog: Подтверждение удаления -->
-    <v-dialog v-model="deleteDialog" max-width="420">
+    <!-- Диалог подтверждения удаления -->
+    <v-dialog v-model="deleteDialogVisible" max-width="400px">
       <v-card>
-        <v-card-title class="text-h6 font-weight-bold pt-4 text-error">Удалить курс?</v-card-title>
-        <v-card-subtitle class="px-4 pb-2">Это действие необратимо</v-card-subtitle>
-        <v-divider class="my-2" />
-
-        <v-card-text class="pa-4">
-          <p class="text-body-1">
-            Вы уверены, что хотите удалить курс
-            <strong class="text-primary">"{{ courseToDelete?.title }}"</strong>?
-          </p>
-          <p class="text-caption text-medium-emphasis mt-2">
-            Все учебные группы, привязанные к этому курсу, останутся в системе, но потеряют ссылку на курс.
-          </p>
+        <v-card-title class="text-h6">Подтверждение удаления</v-card-title>
+        <v-card-text>
+          Вы уверены, что хотите удалить курс <strong>{{ courseToDelete?.title }}</strong>?
         </v-card-text>
-
-        <v-divider />
-        <v-card-actions class="pa-4">
+        <v-card-actions>
           <v-spacer />
-          <v-btn variant="text" @click="deleteDialog = false">Отмена</v-btn>
-          <v-btn color="error" :loading="deleteLoading" @click="submitDelete">Удалить</v-btn>
+          <v-btn variant="text" @click="deleteDialogVisible = false">Отмена</v-btn>
+          <v-btn color="error" @click="deleteCourse">Удалить</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <!-- Модальное окно для XML импорта -->
+    <v-dialog v-model="xmlImportDialogVisible" max-width="600px">
+      <v-card>
+        <v-card-title class="text-h5 font-weight-bold pt-4">
+          Импорт курсов из XML
+        </v-card-title>
+        <v-card-text class="pa-4">
+          <v-card
+            class="drop-zone pa-4 text-center"
+            :class="{ 'drop-zone-active': isDragging }"
+            @dragleave.prevent="isDragging = false"
+            @dragover.prevent="isDragging = true"
+            @drop.prevent="handleDrop"
+          >
+            <v-icon color="grey-darken-1" size="48">mdi-file-xml-box</v-icon>
+            <div class="text-body-1 mt-2">
+              Перетащите XML-файл с курсами сюда или <strong>нажмите для выбора</strong>
+            </div>
+            <div class="text-caption text-grey mt-2">
+              Формат: &lt;courses&gt;&lt;course&gt;&lt;title&gt;...&lt;/title&gt;&lt;description&gt;...&lt;/description&gt;&lt;duration_days&gt;...&lt;/duration_days&gt;&lt;base_price&gt;...&lt;/base_price&gt;&lt;/course&gt;...&lt;/courses&gt;
+            </div>
+            <input
+              ref="fileInput"
+              accept=".xml"
+              style="display: none"
+              type="file"
+              @change="handleFileImport"
+            >
+            <v-btn
+              class="mt-4"
+              color="secondary"
+              variant="tonal"
+              @click="triggerFileInput"
+            >
+              Выбрать файл
+            </v-btn>
+          </v-card>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="xmlImportDialogVisible = false">Закрыть</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Уведомления -->
+    <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
+      {{ snackbar.message }}
+    </v-snackbar>
   </v-container>
 </template>
 
 <script setup lang="ts">
-  import type { CourseRequest, CourseResponse } from '@/types/api'
+  import type { CourseResponse } from '@/types/api'
   import { computed, onMounted, ref } from 'vue'
-  import { coursesStore } from '@/stores/coursesStore'
+  import { useXml } from '@/composables/useXml'
+  import { coursesApi, coursesStore } from '@/stores/coursesStore'
 
-  // 🔧 КОНСТАНТА: всегда 12 элементов на странице
-  const PER_PAGE = 12
+  const { upload: uploadXml, exportXml } = useXml()
 
-  // 🔍 Поиск и пагинация
-  const search = ref('')
-
-  const totalPages = computed(() => {
-    const count = coursesStore.state.pagination?.count || 0
-    return Math.ceil(count / PER_PAGE) || 1
-  })
-
-  // 🔑 Единая функция загрузки с фиксированным per_page
-  function fetchCourses (extraParams: Record<string, any> = {}) {
-    return coursesStore.fetch({
-      per_page: PER_PAGE,
-      ...extraParams,
-    })
-  }
-
-  function handleSearch () {
-    coursesStore.reset()
-    fetchCourses({ search: search.value || undefined, page: 1 })
-  }
-
-  // 🔑 Обработчик пагинации — явно передаём page + per_page
-  function handlePageChange (page: number) {
-    fetchCourses({ page })
-  }
-
-  // 📖 Просмотр курса
-  const dialog = ref(false)
-  const selectedCourse = ref<CourseResponse | null>(null)
-
-  function openModal (course: CourseResponse) {
-    selectedCourse.value = course
-    dialog.value = true
-  }
-
-  // ➕ Создание курса
-  const createDialog = ref(false)
+  // Состояние
+  const searchQuery = ref('')
+  const minDuration = ref<number | null>(null)
+  const maxPrice = ref<number | null>(null)
+  const dialogVisible = ref(false)
+  const deleteDialogVisible = ref(false)
+  const xmlImportDialogVisible = ref(false)
+  const editingCourse = ref<CourseResponse | null>(null)
+  const courseToDelete = ref<CourseResponse | null>(null)
   const formValid = ref(false)
-  const createLoading = ref(false)
-  const form = ref<CourseRequest>({
+  const formRef = ref<any>(null)
+  const isDragging = ref(false)
+  const fileInput = ref<HTMLInputElement | null>(null)
+
+  // Форма
+  const formData = ref({
     title: '',
     description: '',
-    duration_days: 1,
-    base_price: '0',
+    duration_days: null as number | null,
+    base_price: '',
   })
 
-  function openCreateDialog () {
-    form.value = { title: '', description: '', duration_days: 1, base_price: '0' }
-    formValid.value = false
-    createDialog.value = true
+  // Уведомления
+  const snackbar = ref({
+    show: false,
+    message: '',
+    color: 'success',
+  })
+
+  // Заголовки таблицы
+  const headers = [
+    { title: 'Название', key: 'title', width: 250, align: 'start' },
+    { title: 'Описание', key: 'description', sortable: false, align: 'start' },
+    { title: 'Длительность', key: 'duration_days', width: 120, align: 'center' },
+    { title: 'Цена', key: 'base_price', width: 150, align: 'end' },
+    { title: 'Действия', key: 'actions', sortable: false, width: 120, align: 'end' },
+  ]
+
+  // Пагинация
+  const totalPages = computed(() => Math.ceil(coursesStore.state.pagination.count / coursesStore.state.pagination.per_page) || 1)
+
+  // Валидация
+  const requiredRule = (v: any) => !!v || 'Поле обязательно'
+  const positiveNumberRule = (v: any) => (v !== null && v !== '' && Number(v) > 0) || 'Значение должно быть больше 0'
+
+  function showSnackbar (message: string, color = 'success') {
+    snackbar.value = { show: true, message, color }
   }
 
-  async function submitCreate () {
-    if (!formValid.value) return
-    createLoading.value = true
+  // Загрузка курсов с фильтрами
+  async function loadCourses () {
+    const params: Record<string, any> = {}
+    if (searchQuery.value) params.search = searchQuery.value
+    if (minDuration.value !== null && minDuration.value > 0) params.min_duration = minDuration.value
+    if (maxPrice.value !== null && maxPrice.value > 0) params.max_price = maxPrice.value
+    await coursesStore.fetch(params, true)
+  }
+
+  // Дебаунс поиска
+  let searchTimeout: ReturnType<typeof setTimeout>
+  function onSearchChange () {
+    clearTimeout(searchTimeout)
+    searchTimeout = setTimeout(() => {
+      coursesStore.state.pagination.page = 1
+      loadCourses()
+    }, 300)
+  }
+
+  function onFilterChange () {
+    coursesStore.state.pagination.page = 1
+    loadCourses()
+  }
+
+  // Пагинация
+  function onPageChange (page: number) {
+    coursesStore.goToPage(page)
+    loadCourses()
+  }
+
+  async function onPageSizeChange (size: number) {
+    coursesStore.changePageSize(size)
+    await loadCourses()
+  }
+
+  // CRUD
+  function openAddDialog () {
+    editingCourse.value = null
+    formData.value = { title: '', description: '', duration_days: null, base_price: '' }
+    dialogVisible.value = true
+  }
+
+  function openEditDialog (course: CourseResponse) {
+    editingCourse.value = course
+    formData.value = {
+      title: course.title,
+      description: course.description,
+      duration_days: course.duration_days,
+      base_price: course.base_price,
+    }
+    dialogVisible.value = true
+  }
+
+  async function saveCourse () {
+    const { valid } = await formRef.value.validate()
+    if (!valid) return
     try {
-      const payload: CourseRequest = {
-        ...form.value,
-        base_price: Number.parseFloat(String(form.value.base_price)).toFixed(2),
+      const payload = {
+        title: formData.value.title,
+        description: formData.value.description,
+        duration_days: Number(formData.value.duration_days),
+        base_price: formData.value.base_price,
       }
-      await coursesStore.create(payload)
-      createDialog.value = false
-      await fetchCourses() // ✅ Обновляем с per_page=12
-    } catch (error) {
-      console.error('Ошибка создания курса:', error)
-    } finally {
-      createLoading.value = false
+      if (editingCourse.value) {
+        await coursesApi.update(editingCourse.value.id, payload)
+        showSnackbar('Курс обновлён')
+      } else {
+        await coursesApi.create(payload)
+        showSnackbar('Курс добавлен')
+      }
+      dialogVisible.value = false
+      await loadCourses()
+    } catch (error: any) {
+      const message = error.response?.data?.detail || 'Ошибка сохранения'
+      showSnackbar(message, 'error')
     }
   }
 
-  // 🗑 Удаление курса
-  const deleteDialog = ref(false)
-  const deleteLoading = ref(false)
-  const courseToDelete = ref<CourseResponse | null>(null)
-
-  function openDeleteDialog (course: CourseResponse) {
+  function confirmDelete (course: CourseResponse) {
     courseToDelete.value = course
-    deleteDialog.value = true
+    deleteDialogVisible.value = true
   }
 
-  async function submitDelete () {
+  async function deleteCourse () {
     if (!courseToDelete.value) return
-    deleteLoading.value = true
     try {
-      await coursesStore.remove(courseToDelete.value.id)
-      deleteDialog.value = false
-      await fetchCourses() // ✅ Обновляем с per_page=12
-    } catch (error) {
-      console.error('Ошибка удаления курса:', error)
-    } finally {
-      deleteLoading.value = false
+      await coursesApi.remove(courseToDelete.value.id)
+      showSnackbar('Курс удалён')
+      deleteDialogVisible.value = false
+      await loadCourses()
+    } catch (error: any) {
+      const message = error.response?.data?.detail || 'Ошибка удаления'
+      showSnackbar(message, 'error')
     }
   }
 
-  // 🛠 Утилиты
-  function getAccentColor (id: number): string {
-    const colors = ['primary', 'success', 'warning', 'info', 'purple', 'teal', 'indigo', 'deep-orange']
-    return colors[id % colors.length]
+  // XML экспорт
+  async function exportCourseToXML (course: CourseResponse) {
+    try {
+      await exportXml('course', course.id)
+      showSnackbar('XML экспортирован')
+    } catch {
+      showSnackbar('Ошибка экспорта XML', 'error')
+    }
   }
 
-  function formatPrice (p: string | number): string {
-    const num = typeof p === 'string' ? Number.parseFloat(p) : p
-    return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 0 }).format(num || 0)
+  // XML импорт
+  const triggerFileInput = () => fileInput.value?.click()
+
+  async function handleFileImport (event: Event) {
+    const input = event.target as HTMLInputElement
+    if (input.files?.[0]) await processXmlFile(input.files[0])
+    input.value = ''
   }
 
-  // 🚀 Initial load
-  onMounted(() => {
-    fetchCourses() // ✅ Первая загрузка с per_page=12
+  async function handleDrop (event: DragEvent) {
+    isDragging.value = false
+    const file = event.dataTransfer?.files?.[0]
+    if (file) await processXmlFile(file)
+  }
+
+  async function processXmlFile (file: File) {
+    if (!file.name.endsWith('.xml')) {
+      showSnackbar('Загрузите XML-файл', 'error')
+      return
+    }
+    try {
+      await uploadXml(file)
+      showSnackbar('XML импортирован, обновление данных...')
+      setTimeout(async () => {
+        await loadCourses()
+        xmlImportDialogVisible.value = false
+        showSnackbar('Таблица обновлена')
+      }, 1500)
+    } catch (error: any) {
+      const message = error.response?.data?.error || 'Ошибка импорта XML'
+      showSnackbar(message, 'error')
+    }
+  }
+
+  onMounted(async () => {
+    await loadCourses()
   })
 </script>
+
+<style scoped>
+.drop-zone {
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: #fafafa;
+}
+
+.drop-zone:hover {
+  border-color: #1976d2;
+  background-color: #f0f7ff;
+}
+
+.drop-zone-active {
+  border-color: #1976d2;
+  background-color: #e3f2fd;
+}
+
+.v-data-table__wrapper {
+  transition: opacity 0.2s ease;
+}
+</style>
