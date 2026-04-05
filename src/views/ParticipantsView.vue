@@ -23,38 +23,10 @@
         color="secondary"
         prepend-icon="mdi-upload"
         style="font-size: 22px;"
-        @click="triggerFileInput"
+        @click="xmlImportDialogVisible = true"
       >
         XML-импорт
       </v-btn>
-      <input
-        ref="fileInput"
-        accept=".xml"
-        style="display: none"
-        type="file"
-        @change="handleFileImport"
-      >
-    </v-row>
-
-    <!-- Drag & Drop зона -->
-    <v-row class="mb-6">
-      <v-col cols="12">
-        <v-card
-          class="drop-zone pa-4 text-center"
-          :class="{ 'drop-zone-active': isDragging }"
-          @dragleave.prevent="isDragging = false"
-          @dragover.prevent="isDragging = true"
-          @drop.prevent="handleDrop"
-        >
-          <v-icon color="grey-darken-1" size="48">mdi-file-xml-box</v-icon>
-          <div class="text-body-1 mt-2">
-            Перетащите XML-файл с сотрудниками сюда или <strong>нажмите для выбора</strong>
-          </div>
-          <div class="text-caption text-grey">
-            Формат: &lt;employees&gt;&lt;employee&gt;&lt;full_name&gt;...&lt;/full_name&gt;&lt;email&gt;...&lt;/email&gt;&lt;company_id&gt;...&lt;/company_id&gt;&lt;/employee&gt;...&lt;/employees&gt;
-          </div>
-        </v-card>
-      </v-col>
     </v-row>
 
     <!-- Поиск и фильтр -->
@@ -97,10 +69,13 @@
     <v-card v-else class="rounded-lg overflow-hidden" elevation="2">
       <v-data-table
         class="elevation-0"
+        disable-pagination
         :headers="headers"
         hide-default-footer
         hover
+        item-key="id"
         :items="employeesStore.state.items"
+        :items-per-page="employeesStore.state.pagination.per_page"
         no-data-text="Сотрудники не найдены"
       >
         <template #item.full_name="{ item }">
@@ -154,8 +129,8 @@
           <v-select
             density="compact"
             hide-details
-            :items="[10, 20, 50, 100]"
-            :model-value="employeesStore.state.pagination.pageSize"
+            :items="[5, 10, 20]"
+            :model-value="employeesStore.state.pagination.per_page"
             style="width: 80px;"
             variant="outlined"
             @update:model-value="onPageSizeChange"
@@ -218,9 +193,6 @@
     <v-dialog v-model="detailDialogVisible" max-width="600">
       <v-card v-if="selectedEmployee">
         <v-card-title class="text-h5 font-weight-bold pt-4 d-flex align-center ga-3">
-          <v-avatar class="text-white" :color="getAvatarColor(selectedEmployee.full_name)" size="48">
-            {{ getInitials(selectedEmployee.full_name) }}
-          </v-avatar>
           <div>
             {{ selectedEmployee.full_name }}
             <div class="text-caption font-weight-regular text-medium-emphasis">{{ selectedEmployee.email }}</div>
@@ -261,6 +233,48 @@
       </v-card>
     </v-dialog>
 
+    <!-- Модальное окно для XML импорта -->
+    <v-dialog v-model="xmlImportDialogVisible" max-width="600px">
+      <v-card>
+        <v-card-title class="text-h5 font-weight-bold pt-4">
+          Импорт сотрудников из XML
+        </v-card-title>
+        <v-card-text class="pa-4">
+          <v-card
+            class="drop-zone pa-4 text-center"
+            :class="{ 'drop-zone-active': isDragging }"
+            @dragleave.prevent="isDragging = false"
+            @dragover.prevent="isDragging = true"
+            @drop.prevent="handleDrop"
+          >
+            <v-icon color="grey-darken-1" size="48">mdi-file-xml-box</v-icon>
+            <div class="text-body-1 mt-2">
+              Перетащите XML-файл с сотрудниками сюда или <strong>нажмите для выбора</strong>
+            </div>
+            <input
+              ref="fileInput"
+              accept=".xml"
+              style="display: none"
+              type="file"
+              @change="handleFileImport"
+            >
+            <v-btn
+              class="mt-4"
+              color="secondary"
+              variant="tonal"
+              @click="triggerFileInput"
+            >
+              Выбрать файл
+            </v-btn>
+          </v-card>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="xmlImportDialogVisible = false">Закрыть</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <!-- Уведомления -->
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
       {{ snackbar.message }}
@@ -283,6 +297,7 @@
   const dialogVisible = ref(false)
   const detailDialogVisible = ref(false)
   const deleteDialogVisible = ref(false)
+  const xmlImportDialogVisible = ref(false) // управление модалкой
   const editingEmployee = ref<EmployeeResponse | null>(null)
   const selectedEmployee = ref<EmployeeResponse | null>(null)
   const employeeToDelete = ref<EmployeeResponse | null>(null)
@@ -291,7 +306,7 @@
   const isDragging = ref(false)
   const fileInput = ref<HTMLInputElement | null>(null)
 
-  // Список компаний (всегда массив)
+  // Список компаний
   const companies = ref<CompanyResponse[]>([])
   const companyOptions = computed(() => companies.value)
 
@@ -318,27 +333,16 @@
   ]
 
   // Пагинация
-  const totalPages = computed(() => Math.ceil(employeesStore.state.pagination.count / employeesStore.state.pagination.pageSize) || 1)
+  const totalPages = computed(() => Math.ceil(employeesStore.state.pagination.count / employeesStore.state.pagination.per_page) || 1)
 
   // Валидация
   const requiredRule = (v: string) => !!v || 'Поле обязательно'
   const emailRule = (v: string) => /.+@.+\..+/.test(v) || 'Введите корректный email'
 
-  // Вспомогательные функции
   function showSnackbar (message: string, color = 'success') {
     snackbar.value = { show: true, message, color }
   }
 
-  function getInitials (fullName: string) {
-    return fullName.split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2)
-  }
-
-  function getAvatarColor (fullName: string) {
-    const colors = ['primary', 'secondary', 'success', 'info', 'warning', 'error']
-    return colors[fullName.length % colors.length]
-  }
-
-  // Загрузка компаний с защитой от не-массива
   async function loadCompanies () {
     try {
       const response = await api.get('/api/companies/')
@@ -358,15 +362,13 @@
     }
   }
 
-  // Загрузка сотрудников с фильтрами
   async function loadEmployees () {
     const params: Record<string, any> = {}
     if (searchQuery.value) params.search = searchQuery.value
-    if (selectedCompanyId.value) params.company_id = selectedCompanyId.value
+    if (selectedCompanyId.value) params.company = selectedCompanyId.value
     await employeesStore.fetch(params, true)
   }
 
-  // Дебаунс поиска
   let searchTimeout: ReturnType<typeof setTimeout>
   function onSearchChange () {
     clearTimeout(searchTimeout)
@@ -381,18 +383,19 @@
     loadEmployees()
   }
 
-  // Пагинация
   function onPageChange (page: number) {
     employeesStore.goToPage(page)
+    // goToPage уже вызывает fetch внутри, но для единообразия можно вызвать loadEmployees
+    // Однако goToPage сам вызывает fetch, поэтому loadEmployees не нужен.
+    // Но чтобы гарантировать обновление с фильтрами, лучше перевызвать loadEmployees
     loadEmployees()
   }
 
-  function onPageSizeChange (size: number) {
+  async function onPageSizeChange (size: number) {
     employeesStore.changePageSize(size)
-    loadEmployees()
+    await loadEmployees()
   }
 
-  // CRUD
   function openAddDialog () {
     editingEmployee.value = null
     formData.value = { full_name: '', email: '', company_id: null }
@@ -461,7 +464,6 @@
     detailDialogVisible.value = true
   }
 
-  // XML экспорт
   async function exportEmployeeToXML (employee: EmployeeResponse) {
     try {
       await exportXml('employee', employee.id)
@@ -471,7 +473,7 @@
     }
   }
 
-  // XML импорт с drag & drop
+  // XML импорт внутри модалки
   const triggerFileInput = () => fileInput.value?.click()
 
   async function handleFileImport (event: Event) {
@@ -493,15 +495,19 @@
     }
     try {
       await uploadXml(file)
-      showSnackbar('XML импортирован')
-      await loadEmployees()
+      showSnackbar('XML импортирован, обновление данных...')
+      // Даём время бэкенду обработать
+      setTimeout(async () => {
+        await loadEmployees()
+        xmlImportDialogVisible.value = false
+        showSnackbar('Таблица обновлена')
+      }, 1500)
     } catch (error: any) {
       const message = error.response?.data?.error || 'Ошибка импорта XML'
       showSnackbar(message, 'error')
     }
   }
 
-  // Старт
   onMounted(async () => {
     await Promise.all([loadCompanies(), loadEmployees()])
   })
